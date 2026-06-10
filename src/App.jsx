@@ -15,6 +15,8 @@ import VisualizadorAudio from "./components/VisualizadorAudio";
 import ChatAsignatura from "./components/ChatAsignatura";
 import TranscriptionPanel from "./components/TranscriptionPanel";
 import NotesCalendarDiary from "./components/NotesCalendarDiary";
+import StudyActionsPanel from "./components/StudyActionsPanel";
+import StudyResultModal from "./components/StudyResultModal";
 
 const STORAGE_KEY = "lumina-studio-diary-notes-v5";
 
@@ -47,6 +49,9 @@ function App() {
   const [selectedDateKey, setSelectedDateKey] = useState(getDateKey());
   const [notesStatus, setNotesStatus] = useState("");
 
+  const [isGeneratingStudy, setIsGeneratingStudy] = useState(false);
+  const [studyResult, setStudyResult] = useState(null);
+
   const [diaryNotes, setDiaryNotes] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -78,6 +83,7 @@ function App() {
     setChatInput("");
     setVoiceActive(false);
     setNotesStatus("");
+    setStudyResult(null);
   };
 
   const clearLiveTranscript = () => {
@@ -197,6 +203,55 @@ function App() {
     setDiaryNotes((prev) => prev.filter((item) => item.id !== noteId));
   };
 
+  const generateStudyArtifact = async (mode) => {
+    try {
+      setIsGeneratingStudy(true);
+      setNotesStatus("Generando material de estudio...");
+
+      const subjectNotes = diaryNotes
+        .filter((note) => note.subject === activeSubject)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .map((note) => ({
+          text: note.text,
+          dateKey: note.dateKey,
+          createdAt: note.createdAt,
+          subjectName: note.subjectName,
+        }));
+
+      const response = await fetch("http://localhost:3001/api/study/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subject: activeSubject,
+          subjectName: activeSubjectData?.name || activeSubject,
+          mode,
+          selectedDateKey,
+          diaryNotes: subjectNotes,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data?.error || "No se pudo generar el material.");
+      }
+
+      setStudyResult({
+        mode,
+        content: data.content,
+      });
+
+      setNotesStatus("Material de estudio generado");
+    } catch (error) {
+      console.error(error);
+      setNotesStatus(error.message || "Error generando material de estudio");
+    } finally {
+      setIsGeneratingStudy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-on-surface flex flex-col font-sans relative overflow-x-hidden">
       <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[140px] pointer-events-none -z-10"></div>
@@ -247,20 +302,11 @@ function App() {
             </nav>
           </aside>
 
-          <div className="glass-modal p-5 flex flex-col gap-4 shadow-xl border-white/5">
-            <h3 className="text-body-md font-medium text-white">
-              Contexto Activo
-            </h3>
-
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Conectado al modelo local. Accediendo al temario de{" "}
-              <strong>{activeSubjectData?.name}</strong>.
-            </p>
-
-            <div className="chip-ai w-max mt-1">
-              <span>Modo Analítico</span>
-            </div>
-          </div>
+          <StudyActionsPanel
+            activeSubjectName={activeSubjectData?.name || activeSubject}
+            isGenerating={isGeneratingStudy}
+            onGenerate={generateStudyArtifact}
+          />
         </div>
 
         <div className="min-w-0">
@@ -278,6 +324,17 @@ function App() {
                 model="llama3"
                 inputValue={chatInput}
                 onInputChange={setChatInput}
+                activeSubjectName={activeSubjectData?.name || activeSubject}
+                selectedDateKey={selectedDateKey}
+                contextNotes={diaryNotes
+                  .filter((note) => note.subject === activeSubject)
+                  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                  .map((note) => ({
+                    text: note.text,
+                    dateKey: note.dateKey,
+                    createdAt: note.createdAt,
+                    subjectName: note.subjectName,
+                  }))}
               />
             </div>
           </div>
@@ -313,6 +370,11 @@ function App() {
           />
         </div>
       </main>
+
+      <StudyResultModal
+        result={studyResult}
+        onClose={() => setStudyResult(null)}
+      />
     </div>
   );
 }

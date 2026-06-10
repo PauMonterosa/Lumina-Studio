@@ -1,9 +1,108 @@
 import { useRef, useState } from "react";
 
+const MAX_CONTEXT_CHARS = 30000;
+
+function limitText(text, maxChars = MAX_CONTEXT_CHARS) {
+    if (!text) return "";
+    if (text.length <= maxChars) return text;
+
+    return text.slice(text.length - maxChars);
+}
+
+function formatDateLabel(dateKey) {
+    if (!dateKey) return "sin fecha";
+
+    const [year, month, day] = dateKey.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+
+    return new Intl.DateTimeFormat("es-ES", {
+        dateStyle: "full",
+    }).format(date);
+}
+
+function buildContextBlock({
+    activeSubjectName,
+    selectedDateKey,
+    contextNotes = [],
+}) {
+    const notesBlock =
+        contextNotes.length > 0
+            ? contextNotes
+                .map((note, index) => {
+                    const dateKey = note.dateKey || "sin fecha";
+                    const dateLabel = formatDateLabel(dateKey);
+                    const createdAt = note.createdAt
+                        ? new Date(note.createdAt).toLocaleString("es-ES")
+                        : "sin hora";
+
+                    return `
+[NOTA ${index + 1}]
+Fecha clave: ${dateKey}
+Fecha en lenguaje natural: ${dateLabel}
+Creada: ${createdAt}
+Asignatura: ${note.subjectName || activeSubjectName}
+
+Contenido:
+${note.text}
+`.trim();
+                })
+                .join("\n\n---\n\n")
+            : "No hay notas guardadas para esta asignatura.";
+
+    return limitText(`
+ASIGNATURA ACTIVA:
+${activeSubjectName}
+
+DÍA SELECCIONADO EN EL CALENDARIO:
+${selectedDateKey}
+${formatDateLabel(selectedDateKey)}
+
+NOTAS Y TRANSCRIPCIONES DISPONIBLES:
+${notesBlock}
+`.trim());
+}
+
+function buildSystemPrompt({
+    activeSubjectName,
+    selectedDateKey,
+    contextNotes,
+}) {
+    const contextBlock = buildContextBlock({
+        activeSubjectName,
+        selectedDateKey,
+        contextNotes,
+    });
+
+    return `
+Eres el tutor local de Lumina Studio para la asignatura "${activeSubjectName}".
+
+Tu fuente principal de verdad es el CONTEXTO DE APUNTES que aparece más abajo.
+Debes responder usando SOLO información apoyada por ese contexto y por la conversación actual.
+
+REGLAS OBLIGATORIAS:
+- No inventes clases, profesores, tareas, fechas, temas ni explicaciones.
+- No uses frases tipo "[inserta aquí]" ni placeholders.
+- Si el usuario pregunta por una fecha concreta, busca en las notas por "Fecha clave" y por "Fecha en lenguaje natural".
+- Si no hay información suficiente sobre esa fecha o tema, dilo claramente.
+- Si no hay notas del día pedido, responde: "No tengo ninguna transcripción guardada para esa fecha en esta asignatura."
+- Si hay notas relevantes, resume lo que se hizo de forma concreta.
+- Cuando uses información de una nota, menciona la fecha de esa nota.
+- Si el usuario pregunta algo de física, matemáticas o ingeniería, explica con rigor universitario.
+- Si una transcripción es confusa, dilo y no completes huecos inventando.
+- Responde en español salvo que el usuario pida otro idioma.
+
+CONTEXTO DE APUNTES:
+${contextBlock}
+`.trim();
+}
+
 export default function ChatAsignatura({
     model = "llama3",
     inputValue,
     onInputChange,
+    activeSubjectName = "Asignatura",
+    selectedDateKey = "",
+    contextNotes = [],
 }) {
     const [messages, setMessages] = useState([
         {
@@ -75,6 +174,14 @@ export default function ChatAsignatura({
         abortRef.current = controller;
 
         try {
+            const systemPrompt = buildSystemPrompt({
+                activeSubjectName,
+                selectedDateKey,
+                contextNotes,
+            });
+
+            const recentMessages = nextMessages.slice(-12);
+
             const response = await fetch("http://localhost:11434/api/chat", {
                 method: "POST",
                 headers: {
@@ -84,10 +191,20 @@ export default function ChatAsignatura({
                 body: JSON.stringify({
                     model,
                     stream: true,
-                    messages: nextMessages.map((msg) => ({
-                        role: msg.role,
-                        content: msg.content,
-                    })),
+                    options: {
+                        temperature: 0.2,
+                        top_p: 0.85,
+                    },
+                    messages: [
+                        {
+                            role: "system",
+                            content: systemPrompt,
+                        },
+                        ...recentMessages.map((msg) => ({
+                            role: msg.role,
+                            content: msg.content,
+                        })),
+                    ],
                 }),
             });
 
@@ -121,7 +238,14 @@ export default function ChatAsignatura({
                     const trimmed = line.trim();
                     if (!trimmed) continue;
 
-                    const parsed = JSON.parse(trimmed);
+                    let parsed;
+
+                    try {
+                        parsed = JSON.parse(trimmed);
+                    } catch {
+                        continue;
+                    }
+
                     const chunk = parsed?.message?.content || "";
 
                     if (chunk) {
@@ -137,7 +261,7 @@ export default function ChatAsignatura({
             console.error(err);
 
             replaceLastAssistantMessage(
-                "No he podido conectar con Ollama. Comprueba que Ollama esté ejecutándose en localhost:11434 y que el modelo esté descargado."
+                "No he podido conectar con Ollama o generar una respuesta contextual. Comprueba que Ollama esté ejecutándose en localhost:11434 y que el modelo esté descargado."
             );
         } finally {
             setIsLoading(false);
@@ -161,8 +285,14 @@ export default function ChatAsignatura({
                 <h2 className="text-lg font-semibold text-slate-100">
                     Chat de Asignatura
                 </h2>
+
                 <p className="text-sm text-slate-400">
                     Modelo local: <span className="text-cyan-300">{model}</span>
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                    Contexto activo: {contextNotes.length} notas de{" "}
+                    {activeSubjectName}
                 </p>
             </header>
 
@@ -200,7 +330,7 @@ export default function ChatAsignatura({
                                 sendMessage();
                             }
                         }}
-                        placeholder="Pregunta algo sobre la asignatura..."
+                        placeholder="Pregunta algo sobre la asignatura o tus clases guardadas..."
                         rows={2}
                         className="input-dark min-h-[52px] flex-1 resize-none"
                     />
