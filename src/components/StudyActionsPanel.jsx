@@ -13,8 +13,7 @@ const ACTIONS = [
         icon: Sparkles,
         cardClass:
             "border-cyan-400/20 bg-cyan-400/5 hover:border-cyan-400/50 hover:bg-cyan-400/10",
-        iconClass:
-            "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
+        iconClass: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
         titleClass: "text-cyan-100",
     },
     {
@@ -24,8 +23,7 @@ const ACTIONS = [
         icon: CalendarDays,
         cardClass:
             "border-violet-400/20 bg-violet-400/5 hover:border-violet-400/50 hover:bg-violet-400/10",
-        iconClass:
-            "border-violet-400/30 bg-violet-400/10 text-violet-200",
+        iconClass: "border-violet-400/30 bg-violet-400/10 text-violet-200",
         titleClass: "text-violet-100",
     },
     {
@@ -46,8 +44,7 @@ const ACTIONS = [
         icon: FileText,
         cardClass:
             "border-amber-400/20 bg-amber-400/5 hover:border-amber-400/50 hover:bg-amber-400/10",
-        iconClass:
-            "border-amber-400/30 bg-amber-400/10 text-amber-200",
+        iconClass: "border-amber-400/30 bg-amber-400/10 text-amber-200",
         titleClass: "text-amber-100",
     },
 ];
@@ -66,7 +63,10 @@ export default function StudyActionsPanel({
 
                 <p className="mt-1 text-sm leading-relaxed text-slate-400">
                     Genera material desde tus apuntes de{" "}
-                    <strong className="text-slate-300">{activeSubjectName}</strong>.
+                    <strong className="text-slate-300">
+                        {activeSubjectName}
+                    </strong>
+                    .
                 </p>
             </div>
 

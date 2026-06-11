@@ -177,3 +177,20 @@ h6 {
   background: linear-gradient(90deg, var(--color-secondary) 0%, var(--color-primary) 100%);
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }
+
+.message-content .katex {
+  font-size: 1.05em;
+}
+
+.message-content .katex-display {
+  margin: 0.9rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.35rem 0;
+}
+
+.message-content a {
+  color: rgb(103 232 249);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

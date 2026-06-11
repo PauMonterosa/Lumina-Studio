@@ -1,15 +1,20 @@
 import {
   Sparkles,
-  BookOpen,
-  Calculator,
+  Cpu,
   Atom,
-  Code,
-  Globe,
+  Activity,
+  SunMedium,
+  Boxes,
   MessageSquare,
+  CalendarDays,
+  Database,
+  Wifi,
+  Globe,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 import "./index.css";
+import "katex/dist/katex.min.css";
 
 import VisualizadorAudio from "./components/VisualizadorAudio";
 import ChatAsignatura from "./components/ChatAsignatura";
@@ -21,12 +26,57 @@ import StudyResultModal from "./components/StudyResultModal";
 const STORAGE_KEY = "lumina-studio-diary-notes-v5";
 
 const ASIGNATURAS = [
-  { id: "math", name: "Matemáticas Avanzadas", icon: Calculator },
-  { id: "physics", name: "Física Cuántica", icon: Atom },
-  { id: "programming", name: "Algoritmia y Datos", icon: Code },
-  { id: "history", name: "Historia Universal", icon: Globe },
-  { id: "literature", name: "Literatura Contemporánea", icon: BookOpen },
+  { id: "electronics", name: "Electrónica Física", icon: Cpu },
+  { id: "quantum", name: "Mecánica Cuántica", icon: Atom },
+  { id: "control", name: "Teoría de Control", icon: Activity },
+  { id: "photonics", name: "Fotónica", icon: SunMedium },
+  { id: "solid_state", name: "Estado Sólido", icon: Boxes },
 ];
+
+const APP_LANGUAGES = {
+  ca: {
+    id: "ca",
+    label: "Català",
+    shortLabel: "CAT",
+    speechCode: "ca-ES",
+    promptName: "catalán",
+  },
+  es: {
+    id: "es",
+    label: "Castellano",
+    shortLabel: "ESP",
+    speechCode: "es-ES",
+    promptName: "castellano",
+  },
+  en: {
+    id: "en",
+    label: "English",
+    shortLabel: "ENG",
+    speechCode: "en-US",
+    promptName: "inglés",
+  },
+};
+
+const CHAT_MODE_LABELS = {
+  conceptual: {
+    label: "Conceptual",
+    color: "text-cyan-300",
+    bg: "bg-cyan-400/10",
+    border: "border-cyan-400/20",
+  },
+  problems: {
+    label: "Problemas",
+    color: "text-amber-300",
+    bg: "bg-amber-400/10",
+    border: "border-amber-400/20",
+  },
+  exam: {
+    label: "Examen",
+    color: "text-rose-300",
+    bg: "bg-rose-500/10",
+    border: "border-rose-400/20",
+  },
+};
 
 function getDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -34,6 +84,17 @@ function getDateKey(date = new Date()) {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function formatHeaderDate(dateKey) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
 }
 
 function App() {
@@ -48,6 +109,9 @@ function App() {
 
   const [selectedDateKey, setSelectedDateKey] = useState(getDateKey());
   const [notesStatus, setNotesStatus] = useState("");
+
+  const [chatMode, setChatMode] = useState("conceptual");
+  const [appLanguage, setAppLanguage] = useState("es");
 
   const [isGeneratingStudy, setIsGeneratingStudy] = useState(false);
   const [studyResult, setStudyResult] = useState(null);
@@ -76,6 +140,20 @@ function App() {
     (subject) => subject.id === activeSubject
   );
 
+  const activeLanguage = APP_LANGUAGES[appLanguage] || APP_LANGUAGES.es;
+
+  const activeSubjectNotes = diaryNotes
+    .filter((note) => note.subject === activeSubject)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map((note) => ({
+      text: note.text,
+      dateKey: note.dateKey,
+      createdAt: note.createdAt,
+      subjectName: note.subjectName,
+      languageCode: note.languageCode,
+      languageName: note.languageName,
+    }));
+
   const handleSubjectChange = (subjectId) => {
     audioControlsRef.current?.pause();
 
@@ -84,6 +162,14 @@ function App() {
     setVoiceActive(false);
     setNotesStatus("");
     setStudyResult(null);
+  };
+
+  const handleLanguageChange = (languageId) => {
+    audioControlsRef.current?.pause();
+
+    setAppLanguage(languageId);
+    setVoiceActive(false);
+    setNotesStatus("");
   };
 
   const clearLiveTranscript = () => {
@@ -115,6 +201,8 @@ function App() {
       text: cleanText,
       createdAt: now.toISOString(),
       dateKey: selectedDateKey,
+      languageCode: activeLanguage.speechCode,
+      languageName: activeLanguage.promptName,
       latexStatus: "idle",
       latexPreview: "",
       error: "",
@@ -156,6 +244,8 @@ function App() {
           body: JSON.stringify({
             subject: note.subject,
             text: note.text,
+            languageCode: note.languageCode || activeLanguage.speechCode,
+            languageName: note.languageName || activeLanguage.promptName,
           }),
         }
       );
@@ -216,6 +306,8 @@ function App() {
           dateKey: note.dateKey,
           createdAt: note.createdAt,
           subjectName: note.subjectName,
+          languageCode: note.languageCode,
+          languageName: note.languageName,
         }));
 
       const response = await fetch("http://localhost:3001/api/study/generate", {
@@ -228,6 +320,8 @@ function App() {
           subjectName: activeSubjectData?.name || activeSubject,
           mode,
           selectedDateKey,
+          languageCode: activeLanguage.speechCode,
+          languageName: activeLanguage.promptName,
           diaryNotes: subjectNotes,
         }),
       });
@@ -257,16 +351,99 @@ function App() {
       <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[140px] pointer-events-none -z-10"></div>
       <div className="fixed bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-[var(--color-accent)]/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
-      <header className="flex justify-center pt-6 pb-5 z-10">
-        <div className="glass-modal px-7 py-3 flex items-center gap-4 rounded-full border border-white/10 shadow-2xl shadow-primary/5">
-          <div className="chip-ai bg-white/5">
-            <Sparkles size={14} />
-            <span>Lumina Studio V4</span>
+      <header className="w-full max-w-[1400px] mx-auto px-4 pt-6 pb-5 z-10">
+        <div className="glass-modal flex items-center justify-between gap-5 rounded-3xl border border-white/10 px-5 py-4 shadow-2xl shadow-primary/5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.18)]">
+              <Sparkles size={22} />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold tracking-tight text-white">
+                  Lumina Studio
+                </h1>
+
+                <span className="rounded-full border border-purple-400/20 bg-purple-500/10 px-3 py-1 text-xs font-mono tracking-wide text-purple-300">
+                  V4
+                </span>
+              </div>
+
+              <p className="mt-1 text-sm text-slate-400">
+                Learning Canvas · Asistente local para Ingeniería Física
+              </p>
+            </div>
           </div>
 
-          <h1 className="text-headline-md font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-            Learning Canvas
-          </h1>
+          <div className="hidden min-w-0 flex-1 justify-center lg:flex">
+            <div className="flex max-w-xl items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-cyan-300">
+                <MessageSquare size={18} />
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">
+                  {activeSubjectData?.name || activeSubject}
+                </p>
+
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Tutor contextual con apuntes, diario y LaTeX
+                </p>
+              </div>
+
+              <div
+                className={`ml-2 rounded-full border px-3 py-1 text-xs font-semibold ${CHAT_MODE_LABELS[chatMode]?.bg
+                  } ${CHAT_MODE_LABELS[chatMode]?.border} ${CHAT_MODE_LABELS[chatMode]?.color
+                  }`}
+              >
+                {CHAT_MODE_LABELS[chatMode]?.label}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-200">
+              <Globe size={14} />
+
+              <select
+                value={appLanguage}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className="cursor-pointer bg-transparent font-semibold outline-none"
+                title="Idioma activo"
+              >
+                {Object.values(APP_LANGUAGES).map((language) => (
+                  <option
+                    key={language.id}
+                    value={language.id}
+                    className="bg-slate-950 text-slate-100"
+                  >
+                    {language.shortLabel}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="hidden rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 md:flex md:items-center md:gap-2">
+              <Wifi size={14} />
+              <span>Local</span>
+            </div>
+
+            <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300 sm:flex sm:items-center sm:gap-2">
+              <Database size={14} className="text-purple-300" />
+              <span>{activeSubjectNotes.length} notas</span>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300 flex items-center gap-2">
+              <CalendarDays size={14} className="text-cyan-300" />
+              <span>{formatHeaderDate(selectedDateKey)}</span>
+            </div>
+
+            {voiceActive && (
+              <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300">
+                Grabando
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -287,14 +464,15 @@ function App() {
                     key={subject.id}
                     onClick={() => handleSubjectChange(subject.id)}
                     className={`flex items-center gap-4 px-4 py-3 rounded-12 transition-all duration-300 text-left ${isActive
-                      ? "bg-primary/10 border border-primary/30 text-primary shadow-[0_0_15px_rgba(56,189,248,0.15)]"
-                      : "hover:bg-white/5 text-slate-400 border border-transparent"
+                        ? "bg-primary/10 border border-primary/30 text-primary shadow-[0_0_15px_rgba(56,189,248,0.15)]"
+                        : "hover:bg-white/5 text-slate-400 border border-transparent"
                       }`}
                   >
                     <Icon
                       size={18}
                       className={isActive ? "text-primary" : "text-slate-500"}
                     />
+
                     <span className="font-medium">{subject.name}</span>
                   </button>
                 );
@@ -318,23 +496,20 @@ function App() {
               </h2>
             </div>
 
-            <div className="flex-1 p-2 flex flex-col overflow-hidden [&>section]:h-full [&>section]:border-none [&>section]:shadow-none [&>section]:bg-transparent">
+            <div className="flex-1 p-2 flex flex-col overflow-hidden">
               <ChatAsignatura
-                key={activeSubject}
-                model="llama3"
+                key={`${activeSubject}-${appLanguage}`}
+                model="qwen2.5"
                 inputValue={chatInput}
                 onInputChange={setChatInput}
+                activeSubject={activeSubject}
                 activeSubjectName={activeSubjectData?.name || activeSubject}
                 selectedDateKey={selectedDateKey}
-                contextNotes={diaryNotes
-                  .filter((note) => note.subject === activeSubject)
-                  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                  .map((note) => ({
-                    text: note.text,
-                    dateKey: note.dateKey,
-                    createdAt: note.createdAt,
-                    subjectName: note.subjectName,
-                  }))}
+                contextNotes={activeSubjectNotes}
+                chatMode={chatMode}
+                onChatModeChange={setChatMode}
+                languageCode={activeLanguage.speechCode}
+                languageName={activeLanguage.promptName}
               />
             </div>
           </div>
@@ -347,7 +522,7 @@ function App() {
             resetSignal={transcriptResetSignal}
             onLiveTranscriptChange={setLiveTranscript}
             onListeningChange={setVoiceActive}
-            language="es-ES"
+            language={activeLanguage.speechCode}
           />
 
           <TranscriptionPanel

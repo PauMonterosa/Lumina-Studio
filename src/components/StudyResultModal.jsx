@@ -1,4 +1,4 @@
-import { Copy, X } from "lucide-react";
+import { Clipboard, X } from "lucide-react";
 
 const MODE_LABELS = {
     mindmap: "Mindmap",
@@ -10,9 +10,11 @@ const MODE_LABELS = {
 export default function StudyResultModal({ result, onClose }) {
     if (!result) return null;
 
+    const content = result.content || "";
+
     const copyToClipboard = async () => {
         try {
-            await navigator.clipboard.writeText(result.content);
+            await navigator.clipboard.writeText(content);
         } catch (error) {
             console.error("No se pudo copiar el resultado:", error);
         }
@@ -38,7 +40,7 @@ export default function StudyResultModal({ result, onClose }) {
                             onClick={copyToClipboard}
                             className="btn-secondary flex items-center gap-2 text-sm"
                         >
-                            <Copy size={15} />
+                            <Clipboard size={15} />
                             Copiar
                         </button>
 
@@ -54,7 +56,7 @@ export default function StudyResultModal({ result, onClose }) {
 
                 <main className="overflow-y-auto p-5">
                     <pre className="whitespace-pre-wrap rounded-2xl border border-white/10 bg-black/30 p-5 text-sm leading-relaxed text-slate-100">
-                        {result.content}
+                        {content}
                     </pre>
                 </main>
             </section>
