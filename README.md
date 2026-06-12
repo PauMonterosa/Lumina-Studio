@@ -25,9 +25,9 @@ The tutor supports three study modes:
 
 | Mode | Purpose |
 |---|---|
-| 🦙 Conceptual | Clear explanations and intuition |
-| 🦙 Problems | Step-by-step problem solving |
-| 🦙 Exam | Rigorous exam-style answers |
+| Conceptual | Clear explanations and intuition |
+| Problems | Step-by-step problem solving |
+| Exam | Rigorous exam-style answers |
 
 Each mode changes the visual identity of the chat and also modifies the AI instructions sent to the backend.
 
