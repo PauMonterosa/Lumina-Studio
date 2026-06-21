@@ -1,12 +1,8 @@
-node_modules/
-dist/
+# --- harness-managed: credential & lock hygiene -------------------------
 .env
+.env.*
+!.env.example
+*.lock
+__pycache__/
+*.pyc
 .DS_Store
-
-# Apuntes personales
-notes/subjects/*.tex
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
