@@ -29,16 +29,16 @@ import StudyResultModal from "./components/StudyResultModal";
 import TranscriptionPanel from "./components/TranscriptionPanel";
 import VisualizadorAudio from "./components/VisualizadorAudio";
 
-const DIARY_STORAGE_KEY = "lumina-studio-diary-notes-v5";
-const AGENDA_STORAGE_KEY = "lumina-studio-agenda-v1";
-const GRADES_STORAGE_KEY = "lumina-studio-grades-v1";
+const DIARY_STORAGE_KEY = "lumina-studio-diary-notes-2026-q1";
+const AGENDA_STORAGE_KEY = "lumina-studio-agenda-2026-q1";
+const GRADES_STORAGE_KEY = "lumina-studio-grades-2026-q1";
 
 const ASIGNATURAS = [
-  { id: "electronics", name: "Electrónica Física", icon: Cpu },
-  { id: "quantum", name: "Mecánica Cuántica", icon: Atom },
-  { id: "control", name: "Teoría de Control", icon: Activity },
-  { id: "photonics", name: "Fotónica", icon: SunMedium },
-  { id: "solid_state", name: "Estado Sólido", icon: Boxes },
+  { id: "nanotechnologies", name: "Nanotechnologies", icon: Boxes },
+  { id: "quantum_technologies", name: "Quantum Technologies", icon: Atom },
+  { id: "microelectronics_design", name: "Microelectronics Design", icon: Cpu },
+  { id: "cpia", name: "CPIA", icon: Activity },
+  { id: "biophotonics", name: "Biophotonics", icon: SunMedium },
 ];
 
 const APP_LANGUAGES = {
@@ -151,6 +151,24 @@ function App() {
   const [appLanguage, setAppLanguage] = useState("es");
   const [isGeneratingStudy, setIsGeneratingStudy] = useState(false);
   const [studyResult, setStudyResult] = useState(null);
+
+  // LUMINA_DEEP_LINKS_V1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const workspace = params.get("workspace");
+    const subject = params.get("subject");
+
+    if (workspace && WORKSPACES[workspace]) {
+      setActiveWorkspace(workspace);
+    }
+
+    if (
+      subject &&
+      ASIGNATURAS.some((item) => item.id === subject)
+    ) {
+      setActiveSubject(subject);
+    }
+  }, []);
 
   const [diaryNotes, setDiaryNotes] = useState(() => {
     const parsed = readLocalStorage(DIARY_STORAGE_KEY, []);

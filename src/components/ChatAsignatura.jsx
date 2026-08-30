@@ -404,6 +404,50 @@ export default function ChatAsignatura({
         });
     };
 
+    const setLastAssistantScientificPlot = (url) => {
+
+
+        if (!url) return;
+
+
+
+        setMessages((prev) => {
+
+
+            const updated = [...prev];
+
+
+            const lastIndex = updated.length - 1;
+
+
+
+            if (lastIndex < 0) return prev;
+
+
+
+            updated[lastIndex] = {
+
+
+                ...updated[lastIndex],
+
+
+                scientificPlotUrl: url,
+
+
+            };
+
+
+
+            return updated;
+
+
+        });
+
+
+    };
+
+
+
     const sendMessage = async () => {
         const cleanInput = input.trim();
         if (!cleanInput || isLoading) return;
@@ -493,6 +537,34 @@ export default function ChatAsignatura({
                     } catch {
                         continue;
                     }
+
+                    if (
+
+
+                        parsed?.lumina?.type === "scientific_plot" &&
+
+
+                        parsed?.lumina?.url
+
+
+                    ) {
+
+
+                        setLastAssistantScientificPlot(
+
+
+                            parsed.lumina.url
+
+
+                        );
+
+
+                        continue;
+
+
+                    }
+
+
 
                     const chunk = parsed?.message?.content || "";
 
@@ -607,6 +679,33 @@ export default function ChatAsignatura({
                                 }`}
                         >
                             <MessageContent content={message.content} />
+
+
+                            {message.scientificPlotUrl && (
+
+                                <figure className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/20">
+
+                                    <img
+
+                                        src={message.scientificPlotUrl}
+
+                                        alt="Gráfica generada por Lumina Scientific Engine"
+
+                                        className="block h-auto w-full bg-white"
+
+                                        loading="lazy"
+
+                                    />
+
+                                    <figcaption className="border-t border-white/10 px-3 py-2 text-[10px] text-slate-500">
+
+                                        Lumina Scientific Engine · Matplotlib
+
+                                    </figcaption>
+
+                                </figure>
+
+                            )}
                         </article>
                     </div>
                 ))}

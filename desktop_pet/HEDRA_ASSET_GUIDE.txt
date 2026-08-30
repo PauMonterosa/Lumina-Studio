@@ -1,0 +1,84 @@
+HEDRA — LUMINA LLAMA ASSET GUIDE
+================================
+
+La V1 usa temporalmente el mismo icono geométrico de llama que ya tiene Lumina.
+La siguiente fase consiste en sustituir sus frames por un personaje generado
+con Hedra.
+
+OBJETIVO VISUAL
+---------------
+A compact desktop mascot for a local AI study assistant called Lumina.
+A stylized llama, elegant rather than childish, designed for an Engineering
+Physics student. Futuristic academic aesthetic, cyan/ice-blue glow accents,
+dark navy details, friendly intelligent expression, recognizable silhouette,
+minimal visual clutter, premium software mascot design.
+
+The llama should feel:
+- intelligent
+- curious
+- calm
+- technical
+- approachable
+- not childish
+- not photorealistic
+
+Avoid:
+- text
+- logos
+- background scenery
+- excessive accessories
+- cartoon baby proportions
+- photorealism
+
+ASSET MASTER
+------------
+Generate a clean isolated full-body or 3/4-body character on a plain/transparent
+background, facing slightly left, with enough negative space around ears and legs.
+
+Recommended master:
+- square 1024x1024 or larger
+- transparent background if Hedra supports it
+- centered character
+- no shadows extending far outside the character
+
+ANIMACIONES QUE QUEREMOS
+------------------------
+1. idle_loop
+   - 2–4 seconds
+   - subtle breathing / body movement
+   - occasional ear movement
+   - seamless loop
+
+2. blink
+   - very short natural blink
+   - otherwise identical pose
+
+3. hover
+   - looks toward the cursor / slightly raises ears
+   - subtle cyan glow
+
+4. click
+   - short acknowledgement
+   - tiny head movement or nod
+   - no camera movement
+
+5. thinking (future)
+   - focused expression
+   - subtle pulsing glow
+
+6. success (future)
+   - small pleased motion
+
+EXPORT
+------
+For desktop integration, export frames with:
+- transparent background when possible
+- same canvas size for every frame
+- no camera movement
+- character always in same approximate position
+
+We will replace:
+desktop_pet/assets/llama_idle_0.png
+desktop_pet/assets/llama_idle_1.png
+
+Later we can extend lumina_llama.py to support animated WebP/GIF/frame sequences.

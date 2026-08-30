@@ -1,0 +1,17 @@
+LUMINA SCIENTIFIC ENGINE V1.3
+
+Si ya tienes V1.2.2 instalada y funcionando:
+
+1. Sustituye únicamente:
+   server/scientificRoutes.js
+
+2. Ejecuta:
+   node --check .\server\scientificRoutes.js
+   node --check .\server\notesServer.js
+   npm.cmd run build
+
+3. Reinicia:
+   npm.cmd run notes
+   npm.cmd run dev
+
+NO es necesario volver a ejecutar install-scientific-engine.js.

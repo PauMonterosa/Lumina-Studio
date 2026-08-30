@@ -1,0 +1,99 @@
+{
+  "subjects": {
+    "nanotechnologies": {
+      "title": "Nanotechnologies",
+      "official_name": "Nanotechnology (NTECH · 230484)"
+    },
+    "quantum_technologies": {
+      "title": "Quantum Technologies",
+      "official_name": "Quantum Technologies (QTech · 230491)"
+    },
+    "microelectronics_design": {
+      "title": "Microelectronics Design",
+      "official_name": "Microelectronic Design · Q7 Electronic Engineering"
+    },
+    "cpia": {
+      "title": "CPIA",
+      "official_name": "Computer Programming and Its Applications (CPIA · 230490)"
+    },
+    "biophotonics": {
+      "title": "Biophotonics",
+      "official_name": "Biomedical Photonics (BIOPHOT · 230482)"
+    }
+  },
+  "automatic_downloads": [
+    {
+      "path": "nanotechnologies/course_guides/UPC_230484_Nanotechnology_Course_Guide.pdf",
+      "url": "https://www.upc.edu/grau/guiadocent/pdf/ing/230484/nanotechnology.pdf"
+    },
+    {
+      "path": "nanotechnologies/course_guides/UPC_NTECH_Official_Syllabus.pdf",
+      "url": "https://enginyeriafisica.etsetb.upc.edu/ca/estudis/optatives/ntech/programa-ntech.pdf"
+    },
+    {
+      "path": "quantum_technologies/course_guides/UPC_QTech_Official_Syllabus.pdf",
+      "url": "https://enginyeriafisica.etsetb.upc.edu/ca/estudis/optatives/qtech/programa-ntech"
+    },
+    {
+      "path": "quantum_technologies/course_guides/UPC_230491_Quantum_Technologies_Course_Guide.pdf",
+      "url": "https://www.upc.edu/grau/guiadocent/pdf/ing/230491/quantum-technologies.pdf"
+    },
+    {
+      "path": "quantum_technologies/open_access/Preskill_Quantum_Information_Ch1.pdf",
+      "url": "https://www.preskill.caltech.edu/ph229/notes/chap1.pdf"
+    },
+    {
+      "path": "quantum_technologies/open_access/Preskill_Quantum_Information_Ch2.pdf",
+      "url": "https://www.preskill.caltech.edu/ph229/notes/chap2.pdf"
+    },
+    {
+      "path": "quantum_technologies/open_access/Preskill_Quantum_Information_Ch3.pdf",
+      "url": "https://www.preskill.caltech.edu/ph229/notes/chap3.pdf"
+    },
+    {
+      "path": "quantum_technologies/open_access/Preskill_Quantum_Information_Ch4.pdf",
+      "url": "https://www.preskill.caltech.edu/ph229/notes/chap4.pdf"
+    },
+    {
+      "path": "quantum_technologies/open_access/Preskill_Quantum_Information_Ch5.pdf",
+      "url": "https://www.preskill.caltech.edu/ph229/notes/chap5.pdf"
+    },
+    {
+      "path": "quantum_technologies/open_access/Preskill_Quantum_Information_Ch6.pdf",
+      "url": "https://www.preskill.caltech.edu/ph229/notes/chap6.pdf"
+    },
+    {
+      "path": "quantum_technologies/open_access/Preskill_Quantum_Information_Ch7.pdf",
+      "url": "https://www.preskill.caltech.edu/ph229/notes/chap7.pdf"
+    },
+    {
+      "path": "microelectronics_design/course_guides/UPC_230736_Introduction_to_Microelectronic_Design_RELATED_Bridge_Guide.pdf",
+      "url": "https://telecos.upc.edu/en/shared/master/mee-_90/mee-subjects/bridge_guia_docent_imd.pdf"
+    },
+    {
+      "path": "cpia/course_guides/UPC_230490_CPIA_Course_Guide.pdf",
+      "url": "https://www.upc.edu/grau/guiadocent/pdf/esp/230490/programacion-de-computadores-y-sus-aplicaciones.pdf"
+    },
+    {
+      "path": "cpia/course_guides/UPC_CPIA_Official_Syllabus.pdf",
+      "url": "https://enginyeriafisica.etsetb.upc.edu/ca/estudis/optatives/cpia/cpiaT22.pdf"
+    },
+    {
+      "path": "cpia/open_access/Fundamentos_de_Ordenadores_Programacion_en_C_Jimenez_Otero_UPC.pdf",
+      "url": "https://upcommons.upc.edu/bitstream/handle/2099.3/36593/9788476539965.pdf?sequence=1"
+    },
+    {
+      "path": "cpia/open_access/OpenMP_API_Specification_5.0.pdf",
+      "url": "https://www.openmp.org/wp-content/uploads/OpenMP-API-Specification-5.0.pdf"
+    },
+    {
+      "path": "biophotonics/course_guides/UPC_230482_Biomedical_Photonics_Course_Guide.pdf",
+      "url": "https://www.upc.edu/grau/guiadocent/pdf/ing/230482/biomedical-photonics.pdf"
+    },
+    {
+      "path": "biophotonics/course_guides/UPC_BIOPHOT_Official_Syllabus.pdf",
+      "url": "https://enginyeriafisica.etsetb.upc.edu/ca/estudis/optatives/biophot/programa-biophot.pdf"
+    }
+  ],
+  "policy": "Only official public course documents and legally open-access resources are auto-downloaded."
+}

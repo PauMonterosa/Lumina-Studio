@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 240">
+<g fill="#67e8f9" stroke="#67e8f9" stroke-linejoin="round">
+<path d="M126 57L88 18H57L99 94L126 83Z" fill-opacity=".72" stroke-width="8"/>
+<path d="M151 60L144 2L182 12L207 72L184 93Z" fill-opacity=".68" stroke-width="8"/>
+<path d="M76 100L122 62H165L204 83L226 131L207 169L209 218H118L92 171L61 154L41 119Z" fill-opacity=".72" stroke-width="8"/>
+<path d="M41 119L13 135L31 160L80 172L92 171L82 126Z" fill-opacity=".9" stroke-width="8"/>
+<path d="M118 218L136 153L207 169L209 218Z" fill-opacity=".55" stroke="none"/>
+</g>
+<path d="M18 139L35 157L82 169L76 145L36 133Z" fill="white" fill-opacity=".72"/>
+<path d="M80 100L126 66H159L174 92L119 111L82 126Z" fill="white" fill-opacity=".26"/>
+<path d="M103 36L124 59L117 75L76 25H90Z" fill="white" fill-opacity=".28"/>
+<path d="M155 12L177 19L194 67L181 78Z" fill="white" fill-opacity=".25"/>
+<path d="M76 100L121 112L133 169" fill="none" stroke="#0f172a" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/>
+<path d="M132 169L209 124" fill="none" stroke="#0f172a" stroke-width="13" stroke-linecap="round" opacity=".92"/>
+<ellipse cx="163" cy="110" rx="15" ry="26" fill="white"/>
+<circle cx="162" cy="111" r="6" fill="#0f172a"/>
+<path d="M147 86C155 80 166 78 176 82" fill="none" stroke="#0f172a" stroke-width="6" stroke-linecap="round" opacity=".75"/>
+<path d="M39 130L33 148M56 136L49 155" fill="none" stroke="#0f172a" stroke-width="6" stroke-linecap="round" opacity=".5"/>
+<path d="M12 159L31 184L79 192L103 178L82 169L31 160Z" fill="#67e8f9" fill-opacity=".68" stroke="#67e8f9" stroke-width="8" stroke-linejoin="round"/>
+<path d="M29 162L79 173" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" opacity=".85"/>
+<circle cx="102" cy="169" r="14" fill="white" fill-opacity=".22"/>
+<circle cx="111" cy="169" r="15" fill="#94a3b8" fill-opacity=".55"/>
+<path d="M154 218L157 185M178 218L183 173" fill="none" stroke="#0f172a" stroke-width="7" stroke-linecap="round" opacity=".22"/>
+</svg>

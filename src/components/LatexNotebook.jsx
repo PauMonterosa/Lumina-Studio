@@ -440,6 +440,15 @@ export default function LatexNotebook({
     start: 0,
   });
 
+  const [scientificPlotOpen, setScientificPlotOpen] = useState(false);
+  const [scientificPlotPrompt, setScientificPlotPrompt] = useState("");
+  const [scientificPlotStatus, setScientificPlotStatus] = useState("idle");
+  const [scientificPlotError, setScientificPlotError] = useState("");
+  const [scientificPlotResult, setScientificPlotResult] = useState(null);
+  const [scientificPlotInsertion, setScientificPlotInsertion] = useState({
+    start: 0,
+  });
+
   const [ghostSuggestion, setGhostSuggestion] = useState(null);
   const [ghostPosition, setGhostPosition] = useState(null);
 
@@ -880,6 +889,9 @@ export default function LatexNotebook({
     clearGhostSuggestion();
     setFigureOpen(false);
     setFigureError("");
+    setScientificPlotOpen(false);
+    setScientificPlotError("");
+    setScientificPlotResult(null);
 
     const selection = getEditorContext();
 
@@ -992,6 +1004,144 @@ export default function LatexNotebook({
     });
   };
 
+  const openScientificPlot = () => {
+    clearGhostSuggestion();
+
+    if (aiStatus !== "loading") {
+      setAiAction(null);
+      setAiInstruction("");
+      setAiProposal("");
+      setAiError("");
+      setAiStatus("idle");
+    }
+
+    setFigureOpen(false);
+    setFigureResults([]);
+    setFigureStatus("idle");
+    setFigureError("");
+    setFigureImportId("");
+
+    const selection = getEditorContext();
+
+    setScientificPlotInsertion({
+      start: selection.start,
+    });
+    setScientificPlotPrompt(
+      selection.selectedText.trim()
+        ? selection.selectedText.replace(/\s+/g, " ").slice(0, 1200)
+        : ""
+    );
+    setScientificPlotStatus("idle");
+    setScientificPlotError("");
+    setScientificPlotResult(null);
+    setScientificPlotOpen(true);
+  };
+
+  const closeScientificPlot = () => {
+    if (scientificPlotStatus === "loading") return;
+
+    setScientificPlotOpen(false);
+    setScientificPlotPrompt("");
+    setScientificPlotStatus("idle");
+    setScientificPlotError("");
+    setScientificPlotResult(null);
+  };
+
+  const generateScientificPlot = async () => {
+    const prompt = scientificPlotPrompt.trim();
+
+    if (prompt.length < 3) {
+      setScientificPlotError(
+        "Describe la gráfica que quieres generar con un poco más de detalle."
+      );
+      return;
+    }
+
+    setScientificPlotStatus("loading");
+    setScientificPlotError("");
+    setScientificPlotResult(null);
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/notebook/scientific-plot/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            subject: activeSubject,
+            subjectName: activeSubjectData?.name || activeSubject,
+            dateKey: selectedDateKey,
+            prompt,
+          }),
+        }
+      );
+
+      const data = await readApiJson(
+        response,
+        "/api/notebook/scientific-plot/generate"
+      );
+
+      if (!response.ok || !data.ok) {
+        throw new Error(
+          data?.error || "No se pudo generar la gráfica científica."
+        );
+      }
+
+      setScientificPlotResult(data);
+      setScientificPlotStatus("done");
+    } catch (error) {
+      setScientificPlotStatus("error");
+      setScientificPlotError(
+        error.message || "Error generando la gráfica científica."
+      );
+    }
+  };
+
+  const insertGeneratedScientificPlot = () => {
+    const latex = scientificPlotResult?.latex;
+
+    if (!latex) {
+      setScientificPlotError(
+        "No hay ninguna gráfica generada para insertar."
+      );
+      return;
+    }
+
+    const start = scientificPlotInsertion.start;
+    const before = content.slice(0, start);
+    const after = content.slice(start);
+
+    const leadingNewline =
+      before && !before.endsWith("\n") ? "\n" : "";
+
+    const insertion =
+      leadingNewline +
+      latex +
+      (latex.endsWith("\n") ? "" : "\n");
+
+    const nextContent = before + insertion + after;
+    const nextCursor = start + insertion.length;
+
+    setContent(nextContent);
+    scheduleSaveAndCompile(nextContent);
+
+    setScientificPlotOpen(false);
+    setScientificPlotPrompt("");
+    setScientificPlotStatus("idle");
+    setScientificPlotError("");
+    setScientificPlotResult(null);
+
+    requestAnimationFrame(() => {
+      const textarea = editorRef.current;
+      if (!textarea) return;
+
+      textarea.focus();
+      textarea.setSelectionRange(nextCursor, nextCursor);
+    });
+  };
+
   const getSuggestedFigureQuery = (selection) => {
     if (selection.selectedText.trim()) {
       return selection.selectedText
@@ -1017,6 +1167,9 @@ export default function LatexNotebook({
 
   const openFigureSearch = () => {
     clearGhostSuggestion();
+    setScientificPlotOpen(false);
+    setScientificPlotError("");
+    setScientificPlotResult(null);
 
     if (aiStatus !== "loading") {
       setAiAction(null);
@@ -1348,6 +1501,15 @@ export default function LatexNotebook({
                 Figura
               </button>
 
+              <button
+                type="button"
+                onClick={openScientificPlot}
+                className="flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.07] px-2.5 py-1.5 text-xs text-emerald-200 transition hover:bg-emerald-400/[0.13]"
+              >
+                <Sigma size={13} />
+                Gráfica exacta
+              </button>
+
               {aiError && !aiAction && (
                 <span className="text-xs text-rose-300">{aiError}</span>
               )}
@@ -1465,6 +1627,160 @@ export default function LatexNotebook({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {scientificPlotOpen && (
+            <div className="border-b border-emerald-400/15 bg-emerald-500/[0.04] p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Sigma size={16} className="text-emerald-300" />
+                    <p className="text-sm font-semibold text-white">
+                      Generar gráfica científica exacta
+                    </p>
+                  </div>
+                  <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+                    Describe la gráfica en lenguaje natural. Qwen interpreta la
+                    petición y Python la dibuja con SymPy, NumPy y Matplotlib.
+                    Primero verás una previsualización; la nota no cambia hasta
+                    que pulses Insertar en LaTeX.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeScientificPlot}
+                  disabled={scientificPlotStatus === "loading"}
+                  className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/5 hover:text-white disabled:opacity-40"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.78fr)]">
+                <div>
+                  <textarea
+                    value={scientificPlotPrompt}
+                    onChange={(event) => {
+                      setScientificPlotPrompt(event.target.value);
+                      if (scientificPlotResult) {
+                        setScientificPlotResult(null);
+                        setScientificPlotStatus("idle");
+                      }
+                      if (scientificPlotError) {
+                        setScientificPlotError("");
+                      }
+                    }}
+                    className="min-h-[190px] w-full resize-y rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-300/35 focus:ring-2 focus:ring-emerald-300/10"
+                    placeholder={`Ejemplo:\nRepresenta y = exp(-x)*sin(4*x) entre 0 y 10.\nTítulo: Respuesta amortiguada.\nEje x: tiempo (s). Eje y: amplitud.\nAñade rejilla y marca y = 0.`}
+                    autoFocus
+                  />
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={generateScientificPlot}
+                      disabled={
+                        scientificPlotStatus === "loading" ||
+                        scientificPlotPrompt.trim().length < 3
+                      }
+                      className="flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {scientificPlotStatus === "loading" ? (
+                        <Loader2 size={15} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={15} />
+                      )}
+                      {scientificPlotResult
+                        ? "Regenerar vista previa"
+                        : "Generar vista previa"}
+                    </button>
+
+                    {scientificPlotResult?.latex && (
+                      <button
+                        type="button"
+                        onClick={insertGeneratedScientificPlot}
+                        className="flex items-center gap-2 rounded-xl border border-emerald-300/25 bg-emerald-400/[0.09] px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-400/[0.15]"
+                      >
+                        <CheckCircle2 size={15} />
+                        Insertar en LaTeX
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="mt-2 text-[11px] leading-5 text-slate-600">
+                    Admite funciones, varias curvas, curvas paramétricas,
+                    polares, curvas implícitas, campos de contorno, campos
+                    vectoriales y datos experimentales con ajuste.
+                  </p>
+
+                  {scientificPlotError && (
+                    <div className="mt-3 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-xs leading-5 text-rose-200">
+                      {scientificPlotError}
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-h-[260px] overflow-hidden rounded-xl border border-white/10 bg-slate-950/70">
+                  {scientificPlotStatus === "loading" ? (
+                    <div className="flex h-full min-h-[260px] flex-col items-center justify-center gap-3 p-6 text-center text-sm text-emerald-100">
+                      <Loader2 size={22} className="animate-spin" />
+                      <div>
+                        <p className="font-semibold">
+                          Calculando y dibujando la figura...
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          La curva se genera numéricamente, no como imagen
+                          creativa.
+                        </p>
+                      </div>
+                    </div>
+                  ) : scientificPlotResult?.previewDataUrl ? (
+                    <div>
+                      <div className="flex min-h-[260px] items-center justify-center bg-white p-2">
+                        <img
+                          src={scientificPlotResult.previewDataUrl}
+                          alt={
+                            scientificPlotResult.caption ||
+                            "Gráfica científica generada"
+                          }
+                          className="max-h-[390px] w-full object-contain"
+                        />
+                      </div>
+
+                      <div className="border-t border-white/10 p-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-2 py-0.5 text-[10px] font-semibold text-emerald-200">
+                            {scientificPlotResult.plotTypeLabel ||
+                              "Gráfica científica"}
+                          </span>
+                          <span className="text-[10px] text-slate-600">
+                            PDF vectorial + PNG
+                          </span>
+                        </div>
+
+                        {scientificPlotResult.caption && (
+                          <p className="mt-2 text-xs leading-5 text-slate-400">
+                            {scientificPlotResult.caption}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex min-h-[260px] flex-col items-center justify-center p-6 text-center">
+                      <Sigma size={30} className="mb-3 text-slate-700" />
+                      <p className="text-sm font-medium text-slate-400">
+                        La previsualización aparecerá aquí.
+                      </p>
+                      <p className="mt-2 max-w-sm text-xs leading-5 text-slate-600">
+                        Si no queda exactamente como quieres, modifica el prompt
+                        y vuelve a generar antes de insertarla.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -1675,7 +1991,7 @@ export default function LatexNotebook({
                   placeholder={`% Escribe aquí tus apuntes de ${activeSubjectData?.name || "la asignatura"}\n\n\\section{Tema de hoy}\n\nEmpieza a escribir directamente en LaTeX...`}
                 />
 
-                {ghostSuggestion && ghostPosition && !aiAction && (
+                {ghostSuggestion && ghostPosition && !aiAction && !scientificPlotOpen && (
                   <div
                     className="pointer-events-none absolute z-20 whitespace-pre-wrap font-mono text-[14px] leading-7 text-slate-500/80"
                     style={{

@@ -6,6 +6,12 @@ import { registerNotebookRoutes } from "./notebookRoutes.js";
 import { registerNotebookAiRoutes } from "./notebookAiRoutes.js";
 import { registerNotebookFigureRoutes } from "./notebookFigureRoutes.js";
 import { registerGoogleCalendarBridgeRoutes } from "./googleCalendarBridgeRoutes.js";
+import { registerScientificRoutes, getScientificContext } from "./scientificRoutes.js";
+import { registerNotebookScientificFigureRoutes } from "./notebookScientificFigureRoutes.js";
+import { registerNotebookScientificPlotRoutes } from "./notebookScientificPlotRoutes.js";
+import { registerRagRoutes, retrieveRagContext } from "./ragRoutes.js";
+import { registerPdfRagRoutes, retrievePdfRagContext } from "./pdfRagRoutes.js";
+import { registerHybridRagRoutes, retrieveHybridRagContext } from "./hybridRagRoutes.js";
 
 const app = express();
 
@@ -18,19 +24,19 @@ const OLLAMA_NUM_CTX = 4096;
 const OLLAMA_KEEP_ALIVE = "1m";
 
 const SUBJECT_FILES = {
-    electronics: "electronics.tex",
-    quantum: "quantum.tex",
-    control: "control.tex",
-    photonics: "photonics.tex",
-    solid_state: "solid_state.tex",
+    nanotechnologies: "nanotechnologies.tex",
+    quantum_technologies: "quantum_technologies.tex",
+    microelectronics_design: "microelectronics_design.tex",
+    cpia: "cpia.tex",
+    biophotonics: "biophotonics.tex",
 };
 
 const SUBJECT_NAMES = {
-    electronics: "Electrónica Física",
-    quantum: "Mecánica Cuántica",
-    control: "Teoría de Control",
-    photonics: "Fotónica",
-    solid_state: "Estado Sólido",
+    nanotechnologies: "Nanotechnologies",
+    quantum_technologies: "Quantum Technologies",
+    microelectronics_design: "Microelectronics Design",
+    cpia: "CPIA",
+    biophotonics: "Biophotonics",
 };
 
 const STUDY_MODES = {
@@ -51,10 +57,30 @@ const NOTES_DIR = path.resolve(process.cwd(), "notes", "subjects");
 app.use(cors());
 app.use(express.json({ limit: "6mb" }));
 
+registerHybridRagRoutes(app);
+
+registerPdfRagRoutes(app);
+
+registerRagRoutes(app);
+
+registerNotebookScientificPlotRoutes(app, {
+    model: STUDY_MODEL,
+    ollamaUrl: OLLAMA_URL,
+});
+
 registerNotebookRoutes(app);
 registerNotebookAiRoutes(app);
 registerNotebookFigureRoutes(app);
 registerGoogleCalendarBridgeRoutes(app);
+registerScientificRoutes(app, {
+    model: STUDY_MODEL,
+    ollamaUrl: OLLAMA_URL,
+    keepAlive: OLLAMA_KEEP_ALIVE,
+});
+registerNotebookScientificFigureRoutes(app, {
+    model: STUDY_MODEL,
+    ollamaUrl: OLLAMA_URL,
+});
 
 async function ensureNotesStructure() {
     await fs.mkdir(NOTES_DIR, { recursive: true });
@@ -389,7 +415,7 @@ async function generateStudyMaterial({
         throw new Error("Modo de estudio no válido.");
     }
 
-    const latexContext = await readSubjectLatex(subject);
+    const latexContext = hybridRagContext ? "" : await readSubjectLatex(subject);
 
     const content = await askOllama({
         model: STUDY_MODEL,
@@ -856,6 +882,18 @@ app.post("/api/chat/contextual", async (req, res) => {
 
         const question = getLastUserQuestion(messages);
 
+        const hybridRagContext = await retrieveHybridRagContext({
+            query: question,
+            subject,
+            selectedDateKey,
+            topK: 6,
+            maxChars: 7200,
+        });
+
+        const ragContext = "";
+
+        const pdfRagContext = "";
+
         const latexContext = await readSubjectLatex(subject);
 
         const relevantDiaryNotes = prioritizeDiaryNotes({
@@ -864,7 +902,7 @@ app.post("/api/chat/contextual", async (req, res) => {
             selectedDateKey,
         });
 
-        const systemPrompt = buildChatSystemPrompt({
+        let systemPrompt = buildChatSystemPrompt({
             subjectName: finalSubjectName,
             mode,
             selectedDateKey,
@@ -874,6 +912,41 @@ app.post("/api/chat/contextual", async (req, res) => {
             diaryNotes: relevantDiaryNotes,
             question,
         });
+
+        if (hybridRagContext) {
+            systemPrompt += `\n\n${hybridRagContext}`;
+        }
+
+        if (pdfRagContext) {
+            systemPrompt += `\n\n${pdfRagContext}`;
+        }
+
+        if (ragContext) {
+            systemPrompt += `\n\n${ragContext}`;
+        }
+
+        let scientificPlotUrl = null;
+
+        try {
+            const scientific = await getScientificContext({
+                question,
+                subjectName: finalSubjectName,
+                model,
+                ollamaUrl: OLLAMA_URL,
+                keepAlive: OLLAMA_KEEP_ALIVE,
+            });
+
+            if (scientific?.context) {
+                systemPrompt += `\n\n${scientific.context}`;
+            }
+
+            scientificPlotUrl = scientific?.plotUrl || null;
+        } catch (scientificError) {
+            console.warn(
+                "Scientific Engine:",
+                scientificError.message
+            );
+        }
 
         const ollamaResponse = await fetch(OLLAMA_URL, {
     method: "POST",
@@ -933,6 +1006,17 @@ app.post("/api/chat/contextual", async (req, res) => {
     res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
+
+    if (scientificPlotUrl) {
+        res.write(
+            JSON.stringify({
+                lumina: {
+                    type: "scientific_plot",
+                    url: scientificPlotUrl,
+                },
+            }) + "\n"
+        );
+    }
 
     for await (const chunk of ollamaResponse.body) {
         res.write(Buffer.from(chunk));
