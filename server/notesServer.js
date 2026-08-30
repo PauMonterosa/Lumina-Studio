@@ -2,13 +2,20 @@ import express from "express";
 import cors from "cors";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { registerNotebookRoutes } from "./notebookRoutes.js";
+import { registerNotebookAiRoutes } from "./notebookAiRoutes.js";
+import { registerNotebookFigureRoutes } from "./notebookFigureRoutes.js";
+import { registerGoogleCalendarBridgeRoutes } from "./googleCalendarBridgeRoutes.js";
 
 const app = express();
 
 const PORT = 3001;
 const OLLAMA_URL = "http://localhost:11434/api/chat";
-const NOTES_MODEL = process.env.NOTES_MODEL || "qwen2.5";
+const NOTES_MODEL = process.env.NOTES_MODEL || "qwen3.5:4b";
 const STUDY_MODEL = process.env.STUDY_MODEL || NOTES_MODEL;
+
+const OLLAMA_NUM_CTX = 4096;
+const OLLAMA_KEEP_ALIVE = "1m";
 
 const SUBJECT_FILES = {
     electronics: "electronics.tex",
@@ -43,6 +50,11 @@ const NOTES_DIR = path.resolve(process.cwd(), "notes", "subjects");
 
 app.use(cors());
 app.use(express.json({ limit: "6mb" }));
+
+registerNotebookRoutes(app);
+registerNotebookAiRoutes(app);
+registerNotebookFigureRoutes(app);
+registerGoogleCalendarBridgeRoutes(app);
 
 async function ensureNotesStructure() {
     await fs.mkdir(NOTES_DIR, { recursive: true });
@@ -135,7 +147,13 @@ Convierte esta transcripción en apuntes universitarios en LaTeX.
 `.trim();
 }
 
-async function askOllama({ model, systemPrompt, userPrompt, temperature = 0.2 }) {
+async function askOllama({
+    model,
+    systemPrompt,
+    userPrompt,
+    temperature = 0.2,
+    numPredict = 1200,
+}) {
     const response = await fetch(OLLAMA_URL, {
         method: "POST",
         headers: {
@@ -144,11 +162,24 @@ async function askOllama({ model, systemPrompt, userPrompt, temperature = 0.2 })
         body: JSON.stringify({
             model,
             stream: false,
+
+            // En este portátil priorizamos velocidad y temperatura.
+            think: false,
+
+            // Descarga el modelo tras 1 minuto sin actividad.
+            keep_alive: OLLAMA_KEEP_ALIVE,
+
             options: {
                 temperature,
                 top_p: 0.85,
-                num_ctx: 8192,
+
+                // Perfil conservador para nuestro hardware.
+                num_ctx: OLLAMA_NUM_CTX,
+
+                // Evita respuestas accidentalmente gigantes.
+                num_predict: numPredict,
             },
+
             messages: [
                 {
                     role: "system",
@@ -845,67 +876,83 @@ app.post("/api/chat/contextual", async (req, res) => {
         });
 
         const ollamaResponse = await fetch(OLLAMA_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                model,
-                stream,
-                options: {
-                    temperature:
-                        mode === "exam" ? 0.12 : mode === "problems" ? 0.18 : 0.25,
-                    top_p: 0.85,
-                    num_ctx: 8192,
-                },
-                messages: [
-                    {
-                        role: "system",
-                        content: systemPrompt,
-                    },
-                    ...messages.map((message) => ({
-                        role: message.role,
-                        content: message.content,
-                    })),
-                ],
-            }),
-        });
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+        model,
+        stream,
+        think: false,
+        keep_alive: OLLAMA_KEEP_ALIVE,
 
-        if (!ollamaResponse.ok) {
-            return res.status(500).json({
-                ok: false,
-                error: `Ollama respondió con HTTP ${ollamaResponse.status}`,
-            });
-        }
+        options: {
+            temperature:
+                mode === "exam"
+                    ? 0.12
+                    : mode === "problems"
+                        ? 0.18
+                        : 0.25,
+
+            top_p: 0.85,
+            num_ctx: OLLAMA_NUM_CTX,
+
+            num_predict:
+                mode === "exam"
+                    ? 1200
+                    : mode === "problems"
+                        ? 900
+                        : 600,
+        },
+
+        messages: [
+            {
+                role: "system",
+                content: systemPrompt,
+            },
+            ...messages.map((message) => ({
+                role: message.role,
+                content: message.content,
+            })),
+        ],
+    }),
+});
+
+            if(!ollamaResponse.ok) {
+                return res.status(500).json({
+                    ok: false,
+                    error: `Ollama respondió con HTTP ${ollamaResponse.status}`,
+                });
+    }
 
         if (!stream) {
-            const data = await ollamaResponse.json();
-            return res.json(data);
-        }
-
-        res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-
-        for await (const chunk of ollamaResponse.body) {
-            res.write(Buffer.from(chunk));
-        }
-
-        res.end();
-    } catch (error) {
-        console.error(error);
-
-        if (!res.headersSent) {
-            res.status(500).json({
-                ok: false,
-                error:
-                    error.message ||
-                    "No se pudo generar la respuesta contextual.",
-            });
-        } else {
-            res.end();
-        }
+        const data = await ollamaResponse.json();
+        return res.json(data);
     }
+
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    for await (const chunk of ollamaResponse.body) {
+        res.write(Buffer.from(chunk));
+    }
+
+    res.end();
+} catch (error) {
+    console.error(error);
+
+    if (!res.headersSent) {
+        res.status(500).json({
+            ok: false,
+            error:
+                error.message ||
+                "No se pudo generar la respuesta contextual.",
+        });
+    } else {
+        res.end();
+    }
+}
 });
 
 app.listen(PORT, async () => {

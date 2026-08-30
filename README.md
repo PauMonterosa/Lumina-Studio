@@ -1,43 +1,293 @@
-# 🦙 Lumina Studio V4 — Learning Canvas
+<div align="center">
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38BDF8?logo=tailwindcss&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white)
-![Ollama](https://img.shields.io/badge/Ollama-Local_AI-000000)
-![Status](https://img.shields.io/badge/status-active-success)
+# ✦ Lumina Studio
 
-**Lumina Studio V4** is a local-first AI learning workspace designed for university STEM students, especially for **Engineering Physics**.
+### Local-first AI workspace for Engineering Physics
 
-It combines a contextual AI tutor, voice transcription, study tools, calendar-based class notes and LaTeX note generation into a single local web application.
+**Study · Solve · Write · Organize · Research**
 
-> Built as a personal **NotebookLM-style Learning Canvas**, powered by local models through Ollama.
+[![Status](https://img.shields.io/badge/status-active-22c55e?style=flat-square)](https://github.com/PauMonterosa/Lumina-Studio)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-Express-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local_AI-111827?style=flat-square)](https://ollama.com/)
+[![LaTeX](https://img.shields.io/badge/LaTeX-Tectonic-008080?style=flat-square&logo=latex&logoColor=white)](https://tectonic-typesetting.github.io/)
+[![Google Calendar](https://img.shields.io/badge/Google_Calendar-sync-4285F4?style=flat-square&logo=googlecalendar&logoColor=white)](https://calendar.google.com/)
+[![arXiv](https://img.shields.io/badge/arXiv-figure_search-B31B1B?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/)
+
+**Lumina Studio** is a personal, local-first academic environment built to support a demanding university STEM workflow — with a particular focus on **Engineering Physics**.
+
+Instead of separating AI chat, LaTeX notes, exams, planning, grades, scientific figures and research into different tools, Lumina brings them into a single workspace while keeping the core AI and academic data on the local machine.
+
+</div>
 
 ---
 
-## ✨ Main Features
+## Why Lumina?
 
-### 🧠 Contextual AI Tutor
+Most AI study tools are excellent at one task and disconnected from everything else.
 
-Lumina includes a central AI tutor connected to a local Ollama model.
+Lumina is designed around a different idea:
 
-The tutor supports three study modes:
+> **Your AI tutor should understand the subject you are studying, the notes you are writing, the date you are working on and the academic context around it.**
 
-| Mode | Purpose |
+The result is not just a chatbot. Lumina acts as a small academic operating system for the semester.
+
+---
+
+## Core workspace
+
+| Workspace | What it does |
 |---|---|
-| Conceptual | Clear explanations and intuition |
-| Problems | Step-by-step problem solving |
-| Exam | Rigorous exam-style answers |
-
-Each mode changes the visual identity of the chat and also modifies the AI instructions sent to the backend.
+| 🧠 **Study** | Contextual local AI tutor with conceptual, problem-solving and exam modes |
+| 📝 **Notes** | Daily LaTeX notebook with live Tectonic compilation and PDF preview |
+| 📅 **Agenda** | Events, tasks, exams, deadlines, priorities and Google Calendar sync |
+| 📊 **Grades** | Continuous-assessment tracking and course-grade planning |
+| 🔬 **Scientific figures** | Search and import figures from scientific/open sources |
+| 🎙️ **Class diary** | Date-aware voice/transcription notes linked to subjects |
 
 ---
 
-### 🎙️ Voice Transcription
+# 🧠 Local AI tutor
 
-The app uses the browser’s native Web Speech API to transcribe classes.
+Lumina uses **Ollama** as its local inference runtime.
 
-Supported active languages:
+The default model is currently:
+
+```text
+qwen3.5:4b
+```
+
+The tutor is subject-aware and can combine:
+
+- active subject,
+- selected study mode,
+- selected date,
+- current conversation,
+- saved class diary entries,
+- LaTeX notes,
+- local academic context.
+
+### Study modes
+
+| Mode | Behaviour |
+|---|---|
+| **Conceptual** | Prioritises intuition, physical meaning and clear explanations |
+| **Problems** | Works through calculations and derivations step by step |
+| **Exam** | Produces stricter, evaluable, exam-style solutions |
+
+The core academic workflow does **not require a cloud LLM API**.
+
+---
+
+# 📝 LaTeX notebook
+
+Lumina includes a real daily LaTeX notebook rather than a plain-text notes editor.
+
+Notes are stored by:
+
+```text
+subject / date
+```
+
+Example:
+
+```text
+notes/
+└── daily/
+    └── quantum/
+        └── 2026-09-18.tex
+```
+
+### Notebook capabilities
+
+- real `.tex` source files,
+- automatic saving,
+- fast recompilation,
+- PDF preview,
+- Tectonic-based rendering,
+- automatic package detection,
+- mathematical environments,
+- figures,
+- tables,
+- equations,
+- TikZ-compatible documents,
+- local LaTeX autocomplete.
+
+### Local autocomplete
+
+Autocomplete is deterministic and runs without loading an AI model.
+
+It supports common LaTeX structures such as:
+
+```latex
+\begin{align}
+...
+\end{align}
+```
+
+```latex
+\frac{}{}
+```
+
+```latex
+\left( \right)
+```
+
+and arbitrary environment completion.
+
+`Tab` accepts the suggestion and `Esc` dismisses it.
+
+---
+
+# ✨ Manual AI actions inside the editor
+
+For situations where local autocomplete is not enough, the notebook can explicitly call the local Qwen model.
+
+Current actions include:
+
+- **Complete**
+- **Improve**
+- **Equation**
+
+These actions generate a proposal instead of silently rewriting the note, so the student remains in control of the final LaTeX source.
+
+---
+
+# 🔬 Scientific figure search
+
+Technical notes often need a real band diagram, diffraction setup, device cross-section or scientific illustration — not an AI-generated decorative image.
+
+Lumina therefore includes a dedicated scientific figure workflow.
+
+### Current sources
+
+- **arXiv** — figures extracted from scientific papers when available
+- **Wikimedia Commons** — openly licensed scientific and technical media
+
+Example searches:
+
+```text
+MOSFET energy band diagram
+Young double slit interference
+diffraction grating
+PN junction band diagram
+stress strain curve
+```
+
+A selected figure can be downloaded into the project and inserted directly into the LaTeX note with its source information preserved.
+
+> arXiv figure reuse depends on the licence of the original paper. Always check the source before republishing material.
+
+---
+
+# 📅 Academic agenda
+
+Lumina includes a full academic planner rather than a minimal calendar.
+
+Events support:
+
+- title,
+- subject,
+- date,
+- start and end time,
+- location,
+- description,
+- event type,
+- priority,
+- completion state.
+
+### Event types
+
+```text
+Class · Study · Task · Assignment · Exam · Personal · Event
+```
+
+### Priority system
+
+Priority is visually separated from the subject colour:
+
+- 🔴 **High**
+- 🟡 **Normal**
+- ⚪ **Low**
+
+This keeps the calendar readable while still preserving the identity of each subject.
+
+### Productivity actions
+
+Events can be:
+
+- edited,
+- duplicated,
+- completed,
+- deleted,
+- restored with **Undo**.
+
+A **Upcoming** panel automatically surfaces the next relevant academic commitments.
+
+---
+
+# 📆 Google Calendar integration
+
+Lumina can synchronise the visible month with Google Calendar.
+
+The integration uses a lightweight **Google Apps Script bridge**, avoiding the need to run a hosted backend or expose the local application publicly.
+
+```mermaid
+flowchart LR
+    L[Lumina Studio] --> B[Local Express backend]
+    B --> A[Google Apps Script]
+    A --> G[Google Calendar]
+    G --> A
+    A --> B
+    B --> L
+```
+
+### Sync behaviour
+
+**Lumina → Google**
+
+- create new Lumina events in Google,
+- update previously linked Lumina events.
+
+**Google → Lumina**
+
+- import Google Calendar events,
+- preserve Google as the authoritative source for Google-originated events.
+
+Sensitive bridge configuration is stored locally and excluded from Git.
+
+---
+
+# 📊 Grade tracker
+
+The **Grades** workspace is designed for continuous assessment.
+
+It can be used to organise:
+
+- assessment items,
+- weights,
+- obtained marks,
+- remaining evaluation,
+- target final grades.
+
+The goal is to answer practical questions such as:
+
+> *What grade do I need on the final exam to finish the subject with an 8?*
+
+---
+
+# 🎙️ Class diary and transcription
+
+Lumina can associate class notes and transcriptions with:
+
+- a subject,
+- a calendar date,
+- a language,
+- the surrounding academic context.
+
+Supported speech-language profiles currently include:
 
 | Language | Code |
 |---|---|
@@ -45,307 +295,353 @@ Supported active languages:
 | Castellano | `es-ES` |
 | English | `en-US` |
 
-The selected language affects:
-
-- speech recognition,
-- AI responses,
-- LaTeX note generation,
-- study tools.
+Diary entries can later become part of the tutor context or be converted into structured study material.
 
 ---
 
-### 📅 Class Diary
+# 🧩 Study tools
 
-Lumina includes an interactive monthly diary where transcriptions can be saved by date.
+Lumina can generate academic material from the current subject context.
 
-Each note stores:
-
-- subject,
-- date,
-- language,
-- transcription text,
-- LaTeX conversion status.
-
----
-
-### 📄 LaTeX Notes Export
-
-Saved transcriptions can be converted into clean LaTeX fragments using Ollama.
-
-The backend appends generated notes into:
-
-```txt
-notes/subjects/<subject>.tex
-```
-
-The system intentionally avoids generating full LaTeX documents. It only appends reusable fragments.
-
----
-
-### 🧩 Study Tools
-
-Lumina includes four AI-powered study actions:
-
-| Tool | Output |
+| Tool | Purpose |
 |---|---|
-| Mindmap | Conceptual map |
-| Podcast | Educational script |
-| Flashcards | Active recall cards |
-| Exam | Practical exam-style problems |
+| 🧠 **Mind map** | Structured conceptual overview |
+| 🎧 **Podcast script** | Explanatory study narrative |
+| 🗂️ **Flashcards** | Active-recall questions |
+| 📝 **Practice exam** | Exam-style questions and solutions |
 
-These tools use the active subject, diary notes and LaTeX notes as context.
+These tools are intended to transform existing course material rather than generate disconnected generic content.
 
 ---
 
-## 🏗️ Project Structure
+# 🎓 Engineering Physics configuration
 
-```txt
-src/
-├─ App.jsx
-├─ index.css
-└─ components/
-   ├─ ChatAsignatura.jsx
-   ├─ MessageContent.jsx
-   ├─ VisualizadorAudio.jsx
-   ├─ TranscriptionPanel.jsx
-   ├─ NotesCalendarDiary.jsx
-   ├─ StudyActionsPanel.jsx
-   └─ StudyResultModal.jsx
+Lumina is currently configured around five technical subjects:
 
-server/
-└─ notesServer.js
+| Subject | ID |
+|---|---|
+| Electrónica Física | `electronics` |
+| Mecánica Cuántica | `quantum` |
+| Teoría de Control | `control` |
+| Fotónica | `photonics` |
+| Estado Sólido | `solid_state` |
 
-notes/
-└─ subjects/
-   ├─ electronics.tex
-   ├─ quantum.tex
-   ├─ control.tex
-   ├─ photonics.tex
-   └─ solid_state.tex
+The architecture is intentionally extensible: subjects are configuration, not separate applications.
+
+---
+
+# 🏗️ Architecture
+
+```mermaid
+flowchart TD
+    UI[React / Vite UI]
+
+    UI --> CHAT[Study Tutor]
+    UI --> NOTE[LaTeX Notebook]
+    UI --> PLAN[Academic Planner]
+    UI --> GRADE[Grade Tracker]
+
+    CHAT --> API[Express Backend]
+    NOTE --> API
+    PLAN --> API
+
+    API --> OLLAMA[Ollama<br/>qwen3.5:4b]
+    API --> TEX[Tectonic]
+    API --> FS[(Local Notes & Data)]
+
+    API --> ARXIV[arXiv]
+    API --> COMMONS[Wikimedia Commons]
+
+    API --> SCRIPT[Google Apps Script]
+    SCRIPT --> GCAL[Google Calendar]
+```
+
+### Design principle
+
+```text
+Local by default
+Cloud only when the feature inherently requires it
 ```
 
 ---
 
-## 📚 Subjects
+# 🔐 Privacy model
 
-Lumina is currently configured for Engineering Physics subjects:
+Not every Lumina feature has the same network requirements.
 
-- Electrónica Física
-- Mecánica Cuántica
-- Teoría de Control
-- Fotónica
-- Estado Sólido
+| Feature | Local | Internet |
+|---|:---:|:---:|
+| Ollama tutor | ✅ | — |
+| LaTeX notes | ✅ | — |
+| Tectonic compilation | ✅ | normally not after dependencies are cached |
+| Agenda | ✅ | — |
+| Grades | ✅ | — |
+| Scientific figure search | — | ✅ |
+| Google Calendar sync | — | ✅ |
+| Future academic research connectors | — | ✅ |
+
+Private notes, model prompts and academic files do not need to be sent to a commercial LLM service for the core workflow.
+
+> Never commit secrets, private transcripts or personal calendar configuration to Git.
 
 ---
 
-## ⚙️ Tech Stack
+# 🧱 Project structure
 
-### Frontend
+The active project is organised around small frontend workspaces and modular backend routes.
 
-- React
-- Vite
-- Tailwind CSS v4
-- lucide-react
-- react-markdown
-- remark-math
-- rehype-katex
-- KaTeX
+```text
+Lumina-Studio/
+│
+├── src/
+│   ├── App.jsx
+│   ├── index.css
+│   └── components/
+│       ├── AcademicPlanner.jsx
+│       ├── ChatAsignatura.jsx
+│       ├── GradeTracker.jsx
+│       ├── LatexNotebook.jsx
+│       ├── MessageContent.jsx
+│       ├── NotesCalendarDiary.jsx
+│       ├── StudyActionsPanel.jsx
+│       ├── StudyResultModal.jsx
+│       ├── TranscriptionPanel.jsx
+│       └── VisualizadorAudio.jsx
+│
+├── server/
+│   ├── notesServer.js
+│   ├── notebookRoutes.js
+│   ├── notebookAiRoutes.js
+│   ├── notebookFigureRoutes.js
+│   └── googleCalendarBridgeRoutes.js
+│
+├── notes/
+│   ├── daily/
+│   └── media/
+│
+├── tectonic.exe
+├── package.json
+└── README.md
+```
 
-### Backend
+Some local integration files are intentionally excluded from Git.
+
+---
+
+# ⚙️ Technology stack
+
+<div align="center">
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 · Vite 8 · Tailwind CSS 4 |
+| UI | Lucide React |
+| Math rendering | KaTeX · remark-math · rehype-katex |
+| Backend | Node.js · Express |
+| Local AI | Ollama · Qwen |
+| Typesetting | LaTeX · Tectonic |
+| Scientific search | arXiv · Wikimedia Commons |
+| Calendar | Google Calendar · Apps Script |
+| Persistence | Local filesystem · localStorage |
+
+</div>
+
+---
+
+# 🚀 Local setup
+
+## Requirements
+
+Install:
 
 - Node.js
-- Express
-- CORS
-- local filesystem storage
+- npm
+- Ollama
+- Tectonic
 
-### AI
+Pull the local model:
 
-- Ollama local API
-- Default model: `qwen2.5`
+```powershell
+ollama pull qwen3.5:4b
+```
 
-### Browser APIs
+Clone the repository:
 
-- Web Audio API
-- Web Speech API
-- localStorage
+```powershell
+git clone https://github.com/PauMonterosa/Lumina-Studio.git
+cd Lumina-Studio
+```
+
+Install dependencies:
+
+```powershell
+npm.cmd install
+```
+
+Start the backend:
+
+```powershell
+npm.cmd run notes
+```
+
+Start the frontend in a second terminal:
+
+```powershell
+npm.cmd run dev
+```
+
+Typical development URLs:
+
+```text
+Frontend  http://localhost:5173
+Backend   http://localhost:3001
+```
+
+### Why `npm.cmd`?
+
+On Windows PowerShell, script execution policies can block `npm.ps1`. Calling `npm.cmd` avoids that PowerShell-specific issue.
 
 ---
 
-## 🚀 Local Setup
+# 🧪 Development checks
 
-### 1. Install dependencies
+Before considering a change stable:
 
-```bash
-npm install
+```powershell
+npm.cmd run build
 ```
 
-### 2. Pull the local Ollama model
+Backend files can be checked independently:
 
-```bash
-ollama pull qwen2.5
-```
-
-### 3. Start Ollama
-
-```bash
-ollama serve
-```
-
-### 4. Start the backend
-
-```bash
-npm run notes
-```
-
-The backend runs at:
-
-```txt
-http://localhost:3001
-```
-
-### 5. Start the frontend
-
-```bash
-npm run dev
-```
-
-The frontend runs at:
-
-```txt
-http://localhost:5173
+```powershell
+node --check .\server\notesServer.js
+node --check .\server\notebookRoutes.js
+node --check .\server\notebookAiRoutes.js
+node --check .\server\notebookFigureRoutes.js
+node --check .\server\googleCalendarBridgeRoutes.js
 ```
 
 ---
 
-## 🧪 Available Scripts
+# 🔭 Research mode — recommended next extension
 
-```bash
-npm run dev
+Lumina already covers most of the daily study loop.
+
+The next major extension is not another chat mode: it is a **citation-grounded research workflow**.
+
+A future **Research** workspace could combine:
+
+```text
+Question
+   ↓
+Academic search
+   ↓
+Paper shortlist
+   ↓
+Evidence extraction
+   ↓
+Cited synthesis
+   ↓
+BibTeX / LaTeX
 ```
 
-Starts the Vite frontend.
+Useful providers include:
 
-```bash
-npm run notes
+- Consensus
+- arXiv
+- OpenAlex
+- Crossref
+- Semantic Scholar
+
+Consensus is particularly interesting as an **optional** connector for literature reviews and project reports because it provides academically grounded search and structured research filters. It should remain separate from the everyday local tutor so that ordinary course questions do not consume external API calls.
+
+---
+
+# 🗺️ Roadmap
+
+### High-value next steps
+
+- [ ] PDF / textbook ingestion with semantic retrieval
+- [ ] Vector search across all personal notes
+- [ ] Python scientific-computing tool
+- [ ] SymPy symbolic mathematics
+- [ ] NumPy / SciPy numerical workflows
+- [ ] Matplotlib plots generated from course problems or laboratory data
+- [ ] Citation-grounded **Research mode**
+- [ ] BibTeX / DOI library
+- [ ] Exam and exercise repository by subject
+- [ ] Spaced-repetition scheduling
+- [ ] Automatic encrypted backup/export
+
+### Optional integrations
+
+- [ ] Consensus API
+- [ ] Zotero
+- [ ] GitHub-backed note snapshots
+- [ ] Mobile/PWA workflow
+
+---
+
+# 🧠 Project philosophy
+
+Lumina is not intended to replace lectures, textbooks or mathematical reasoning.
+
+It is designed to reduce the friction between them.
+
+A productive Engineering Physics workflow often looks like:
+
+```text
+Lecture
+  ↓
+Daily LaTeX notes
+  ↓
+Ask conceptual questions
+  ↓
+Solve exercises
+  ↓
+Organise deadlines
+  ↓
+Track grades
+  ↓
+Find scientific sources
+  ↓
+Prepare the exam or report
 ```
 
-Starts the local Express backend for notes and AI study tools.
-
-```bash
-npm run build
-```
-
-Builds the frontend for production.
-
-```bash
-npm run preview
-```
-
-Previews the production build locally.
+Lumina tries to keep that entire loop in one coherent environment.
 
 ---
 
-## 🧠 How the AI Context Works
+# ⚠️ Academic use
 
-Lumina does not simply send a raw prompt to Ollama.
+AI-generated technical material can contain mistakes.
 
-The contextual chat sends data to the local backend:
+For graded work, laboratory reports and scientific writing:
 
-```txt
-React → Express backend → Ollama
-```
+- verify equations,
+- check units,
+- inspect primary sources,
+- validate citations,
+- compare important claims against course material or peer-reviewed literature.
 
-The backend prepares a structured prompt using:
-
-- active subject,
-- active language,
-- selected chat mode,
-- selected calendar date,
-- diary notes,
-- LaTeX notes,
-- current conversation.
-
-This makes the tutor more reliable than a simple generic chatbot.
+Lumina is a study and research assistant, not an authority.
 
 ---
 
-## 📱 iPhone Usage
+# 👤 Author
 
-Lumina is currently a local web application.
+Developed by **Pau Monterosa**.
 
-A quick iPhone workflow is possible by running the app on your computer and opening it from Safari on the iPhone through the same local network.
+Built as a personal local-first academic workspace for **Engineering Physics**.
 
-However, because the app depends on:
-
-- local Ollama,
-- local Node backend,
-- browser speech recognition,
-
-a true iPhone app would require additional work.
-
-Possible future options:
-
-1. **Local network web app**
-   - easiest option,
-   - runs from the computer,
-   - accessed by iPhone browser.
-
-2. **PWA**
-   - installable from Safari,
-   - but speech recognition may not work reliably on iOS home-screen web apps.
-
-3. **Native iOS wrapper**
-   - using Capacitor or React Native,
-   - best long-term option,
-   - could use native iOS speech recognition.
+<div align="center">
 
 ---
 
-## 🔐 Privacy
+**Lumina Studio**
 
-Lumina is designed as a local-first application.
+*One workspace for the technical semester.*
 
-By default:
+[Repository](https://github.com/PauMonterosa/Lumina-Studio)
 
-- notes stay on your machine,
-- Ollama runs locally,
-- LaTeX files are stored locally,
-- no cloud AI API is required.
-
-Do not commit private notes or transcripts to GitHub.
-
----
-
-## 🧭 Roadmap
-
-Planned improvements:
-
-- PDF upload and document-based context
-- exam repository per subject
-- semantic search / RAG
-- native iPhone version
-- better offline transcription
-- export full LaTeX documents
-- subject-specific prompt templates
-- study session analytics
-
----
-
-## 🦙 Project Vision
-
-Lumina Studio aims to become a personal AI-powered study environment for demanding technical degrees.
-
-The goal is not just to summarize notes, but to help students:
-
-- understand concepts,
-- solve problems,
-- prepare exams,
-- organize classes,
-- generate high-quality academic material,
-- build a long-term personal knowledge base.
-
----
-
-## Author
-
-Developed by **Pau Monterosa** as a local AI learning workspace for Engineering Physics.
+</div>

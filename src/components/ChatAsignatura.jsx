@@ -347,7 +347,7 @@ function LlamaLogo({ mood = "calm", className = "" }) {
 }
 
 export default function ChatAsignatura({
-    model = "qwen2.5",
+    model = "qwen3.5:4b",
     inputValue,
     onInputChange,
     activeSubject = "electronics",

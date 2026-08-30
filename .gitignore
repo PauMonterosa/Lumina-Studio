@@ -3,10 +3,21 @@ dist/
 .env
 .DS_Store
 
-# Apuntes personales
+# Personal academic content
 notes/subjects/*.tex
+notes/daily/
+notes/media/
+
+# Google Calendar - local/private
+google-calendar.bridge.json
+google-calendar.credentials.json
+.lumina/
+
+# Local binaries
+tectonic.exe
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

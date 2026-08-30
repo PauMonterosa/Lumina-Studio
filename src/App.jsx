@@ -1,29 +1,37 @@
 import {
-  Sparkles,
-  Cpu,
-  Atom,
   Activity,
-  SunMedium,
+  Atom,
+  BarChart3,
+  BookOpen,
   Boxes,
-  MessageSquare,
   CalendarDays,
+  Cpu,
   Database,
-  Wifi,
+  FileText,
   Globe,
+  MessageSquare,
+  Sparkles,
+  SunMedium,
+  Wifi,
 } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 import "./index.css";
 import "katex/dist/katex.min.css";
 
-import VisualizadorAudio from "./components/VisualizadorAudio";
+import AcademicPlanner from "./components/AcademicPlanner";
 import ChatAsignatura from "./components/ChatAsignatura";
-import TranscriptionPanel from "./components/TranscriptionPanel";
+import GradeTracker from "./components/GradeTracker";
+import LatexNotebook from "./components/LatexNotebook";
 import NotesCalendarDiary from "./components/NotesCalendarDiary";
 import StudyActionsPanel from "./components/StudyActionsPanel";
 import StudyResultModal from "./components/StudyResultModal";
+import TranscriptionPanel from "./components/TranscriptionPanel";
+import VisualizadorAudio from "./components/VisualizadorAudio";
 
-const STORAGE_KEY = "lumina-studio-diary-notes-v5";
+const DIARY_STORAGE_KEY = "lumina-studio-diary-notes-v5";
+const AGENDA_STORAGE_KEY = "lumina-studio-agenda-v1";
+const GRADES_STORAGE_KEY = "lumina-studio-grades-v1";
 
 const ASIGNATURAS = [
   { id: "electronics", name: "Electrónica Física", icon: Cpu },
@@ -78,11 +86,33 @@ const CHAT_MODE_LABELS = {
   },
 };
 
+const WORKSPACES = {
+  study: {
+    label: "Estudio",
+    description: "Tutor IA, grabaciones y herramientas",
+    icon: BookOpen,
+  },
+  notes: {
+    label: "Apuntes",
+    description: "Cuaderno LaTeX por asignatura y día",
+    icon: FileText,
+  },
+  planner: {
+    label: "Agenda",
+    description: "Eventos, entregas y diario",
+    icon: CalendarDays,
+  },
+  grades: {
+    label: "Calificaciones",
+    description: "Evaluación continua y objetivos",
+    icon: BarChart3,
+  },
+};
+
 function getDateKey(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-
   return `${year}-${month}-${day}`;
 }
 
@@ -97,44 +127,80 @@ function formatHeaderDate(dateKey) {
   }).format(date);
 }
 
+function readLocalStorage(key, fallback) {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function App() {
   const audioControlsRef = useRef(null);
 
+  const [activeWorkspace, setActiveWorkspace] = useState("study");
   const [activeSubject, setActiveSubject] = useState(ASIGNATURAS[0].id);
   const [chatInput, setChatInput] = useState("");
   const [voiceActive, setVoiceActive] = useState(false);
-
   const [liveTranscript, setLiveTranscript] = useState("");
   const [transcriptResetSignal, setTranscriptResetSignal] = useState(0);
-
   const [selectedDateKey, setSelectedDateKey] = useState(getDateKey());
   const [notesStatus, setNotesStatus] = useState("");
-
   const [chatMode, setChatMode] = useState("conceptual");
   const [appLanguage, setAppLanguage] = useState("es");
-
   const [isGeneratingStudy, setIsGeneratingStudy] = useState(false);
   const [studyResult, setStudyResult] = useState(null);
 
   const [diaryNotes, setDiaryNotes] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      const parsed = saved ? JSON.parse(saved) : [];
+    const parsed = readLocalStorage(DIARY_STORAGE_KEY, []);
 
-      return parsed.map((note) => ({
-        ...note,
-        dateKey:
-          note.dateKey ||
-          getDateKey(note.createdAt ? new Date(note.createdAt) : new Date()),
-      }));
-    } catch {
-      return [];
-    }
+    return parsed.map((note) => ({
+      ...note,
+      dateKey:
+        note.dateKey ||
+        getDateKey(note.createdAt ? new Date(note.createdAt) : new Date()),
+    }));
   });
 
+  const [academicEvents, setAcademicEvents] = useState(() =>
+    readLocalStorage(AGENDA_STORAGE_KEY, [])
+  );
+
+  const [gradeBooks, setGradeBooks] = useState(() =>
+    readLocalStorage(GRADES_STORAGE_KEY, {})
+  );
+
+  const [latexNoteIndex, setLatexNoteIndex] = useState([]);
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(diaryNotes));
+    const loadNotebookIndex = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/api/notebook/index");
+        const data = await response.json();
+
+        if (response.ok && data.ok && Array.isArray(data.notes)) {
+          setLatexNoteIndex(data.notes);
+        }
+      } catch {
+        // El cuaderno puede seguir funcionando cuando el backend arranque después.
+      }
+    };
+
+    loadNotebookIndex();
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(DIARY_STORAGE_KEY, JSON.stringify(diaryNotes));
   }, [diaryNotes]);
+
+  useEffect(() => {
+    localStorage.setItem(AGENDA_STORAGE_KEY, JSON.stringify(academicEvents));
+  }, [academicEvents]);
+
+  useEffect(() => {
+    localStorage.setItem(GRADES_STORAGE_KEY, JSON.stringify(gradeBooks));
+  }, [gradeBooks]);
 
   const activeSubjectData = ASIGNATURAS.find(
     (subject) => subject.id === activeSubject
@@ -154,9 +220,50 @@ function App() {
       languageName: note.languageName,
     }));
 
+  const pendingEvents = academicEvents.filter((event) => !event.completed).length;
+
+  const handleNotePresenceChange = ({
+    subject,
+    dateKey,
+    exists,
+    updatedAt,
+  }) => {
+    setLatexNoteIndex((previous) => {
+      const filtered = previous.filter(
+        (item) => !(item.subject === subject && item.dateKey === dateKey)
+      );
+
+      if (!exists) {
+        return filtered;
+      }
+
+      return [
+        ...filtered,
+        {
+          subject,
+          subjectName:
+            ASIGNATURAS.find((item) => item.id === subject)?.name || subject,
+          dateKey,
+          updatedAt: updatedAt || new Date().toISOString(),
+        },
+      ];
+    });
+  };
+
+  const openNotebookFromAgenda = (subjectId, dateKey) => {
+    setActiveSubject(subjectId);
+    setSelectedDateKey(dateKey);
+    setActiveWorkspace("notes");
+  };
+
+  const handleWorkspaceChange = (workspaceId) => {
+    audioControlsRef.current?.pause();
+    setVoiceActive(false);
+    setActiveWorkspace(workspaceId);
+  };
+
   const handleSubjectChange = (subjectId) => {
     audioControlsRef.current?.pause();
-
     setActiveSubject(subjectId);
     setChatInput("");
     setVoiceActive(false);
@@ -166,7 +273,6 @@ function App() {
 
   const handleLanguageChange = (languageId) => {
     audioControlsRef.current?.pause();
-
     setAppLanguage(languageId);
     setVoiceActive(false);
     setNotesStatus("");
@@ -174,9 +280,8 @@ function App() {
 
   const clearLiveTranscript = () => {
     audioControlsRef.current?.pause();
-
     setLiveTranscript("");
-    setTranscriptResetSignal((prev) => prev + 1);
+    setTranscriptResetSignal((previous) => previous + 1);
   };
 
   const saveLiveTranscriptToDiary = () => {
@@ -208,11 +313,10 @@ function App() {
       error: "",
     };
 
-    setDiaryNotes((prev) => [newNote, ...prev]);
+    setDiaryNotes((previous) => [newNote, ...previous]);
     setNotesStatus("Grabación guardada en el día seleccionado");
-
     setLiveTranscript("");
-    setTranscriptResetSignal((prev) => prev + 1);
+    setTranscriptResetSignal((previous) => previous + 1);
   };
 
   const addNoteToLatex = async (noteId) => {
@@ -222,14 +326,14 @@ function App() {
     try {
       setNotesStatus("Convirtiendo nota a LaTeX...");
 
-      setDiaryNotes((prev) =>
-        prev.map((item) =>
+      setDiaryNotes((previous) =>
+        previous.map((item) =>
           item.id === noteId
             ? {
-              ...item,
-              latexStatus: "loading",
-              error: "",
-            }
+                ...item,
+                latexStatus: "loading",
+                error: "",
+              }
             : item
         )
       );
@@ -256,15 +360,15 @@ function App() {
         throw new Error(data?.error || "No se pudo guardar en LaTeX.");
       }
 
-      setDiaryNotes((prev) =>
-        prev.map((item) =>
+      setDiaryNotes((previous) =>
+        previous.map((item) =>
           item.id === noteId
             ? {
-              ...item,
-              latexStatus: "done",
-              latexPreview: data.latex || "",
-              error: "",
-            }
+                ...item,
+                latexStatus: "done",
+                latexPreview: data.latex || "",
+                error: "",
+              }
             : item
         )
       );
@@ -273,14 +377,14 @@ function App() {
     } catch (error) {
       console.error(error);
 
-      setDiaryNotes((prev) =>
-        prev.map((item) =>
+      setDiaryNotes((previous) =>
+        previous.map((item) =>
           item.id === noteId
             ? {
-              ...item,
-              latexStatus: "error",
-              error: error.message || "Error guardando en LaTeX.",
-            }
+                ...item,
+                latexStatus: "error",
+                error: error.message || "Error guardando en LaTeX.",
+              }
             : item
         )
       );
@@ -290,7 +394,9 @@ function App() {
   };
 
   const deleteNote = (noteId) => {
-    setDiaryNotes((prev) => prev.filter((item) => item.id !== noteId));
+    setDiaryNotes((previous) =>
+      previous.filter((item) => item.id !== noteId)
+    );
   };
 
   const generateStudyArtifact = async (mode) => {
@@ -346,12 +452,50 @@ function App() {
     }
   };
 
+  const workspaceHeader = (() => {
+    if (activeWorkspace === "notes") {
+      return {
+        icon: FileText,
+        title: activeSubjectData?.name || "Apuntes LaTeX",
+        subtitle: `${formatHeaderDate(selectedDateKey)} · cuaderno diario`,
+        badge: "LaTeX",
+      };
+    }
+
+    if (activeWorkspace === "planner") {
+      return {
+        icon: CalendarDays,
+        title: "Agenda académica",
+        subtitle: `${pendingEvents} pendientes · diario y planificación`,
+        badge: "Agenda",
+      };
+    }
+
+    if (activeWorkspace === "grades") {
+      return {
+        icon: BarChart3,
+        title: activeSubjectData?.name || "Calificaciones",
+        subtitle: "Evaluación continua, pesos y objetivos",
+        badge: "Notas",
+      };
+    }
+
+    return {
+      icon: MessageSquare,
+      title: activeSubjectData?.name || activeSubject,
+      subtitle: "Tutor contextual con apuntes, diario y LaTeX",
+      badge: CHAT_MODE_LABELS[chatMode]?.label || "Conceptual",
+    };
+  })();
+
+  const HeaderIcon = workspaceHeader.icon;
+
   return (
     <div className="min-h-screen bg-background text-on-surface flex flex-col font-sans relative overflow-x-hidden">
-      <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[140px] pointer-events-none -z-10"></div>
-      <div className="fixed bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-[var(--color-accent)]/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+      <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="fixed bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-[var(--color-accent)]/10 rounded-full blur-[120px] pointer-events-none -z-10" />
 
-      <header className="w-full max-w-[1400px] mx-auto px-4 pt-6 pb-5 z-10">
+      <header className="w-full max-w-[1400px] mx-auto px-4 pt-6 pb-4 z-10">
         <div className="glass-modal flex items-center justify-between gap-5 rounded-3xl border border-white/10 px-5 py-4 shadow-2xl shadow-primary/5">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.18)]">
@@ -363,9 +507,8 @@ function App() {
                 <h1 className="text-xl font-bold tracking-tight text-white">
                   Lumina Studio
                 </h1>
-
                 <span className="rounded-full border border-purple-400/20 bg-purple-500/10 px-3 py-1 text-xs font-mono tracking-wide text-purple-300">
-                  V4
+                  V5.1
                 </span>
               </div>
 
@@ -378,25 +521,20 @@ function App() {
           <div className="hidden min-w-0 flex-1 justify-center lg:flex">
             <div className="flex max-w-xl items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-cyan-300">
-                <MessageSquare size={18} />
+                <HeaderIcon size={18} />
               </div>
 
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-white">
-                  {activeSubjectData?.name || activeSubject}
+                  {workspaceHeader.title}
                 </p>
-
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Tutor contextual con apuntes, diario y LaTeX
+                  {workspaceHeader.subtitle}
                 </p>
               </div>
 
-              <div
-                className={`ml-2 rounded-full border px-3 py-1 text-xs font-semibold ${CHAT_MODE_LABELS[chatMode]?.bg
-                  } ${CHAT_MODE_LABELS[chatMode]?.border} ${CHAT_MODE_LABELS[chatMode]?.color
-                  }`}
-              >
-                {CHAT_MODE_LABELS[chatMode]?.label}
+              <div className="ml-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                {workspaceHeader.badge}
               </div>
             </div>
           </div>
@@ -404,10 +542,9 @@ function App() {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs text-cyan-200">
               <Globe size={14} />
-
               <select
                 value={appLanguage}
-                onChange={(e) => handleLanguageChange(e.target.value)}
+                onChange={(event) => handleLanguageChange(event.target.value)}
                 className="cursor-pointer bg-transparent font-semibold outline-none"
                 title="Idioma activo"
               >
@@ -430,7 +567,7 @@ function App() {
 
             <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300 sm:flex sm:items-center sm:gap-2">
               <Database size={14} className="text-purple-300" />
-              <span>{activeSubjectNotes.length} notas</span>
+              <span>{diaryNotes.length} notas</span>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300 flex items-center gap-2">
@@ -447,104 +584,166 @@ function App() {
         </div>
       </header>
 
-      <main className="w-full max-w-[1400px] mx-auto px-4 pb-6 grid grid-cols-1 gap-5 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)_390px] items-start z-10">
-        <div className="flex flex-col gap-5 min-w-0">
-          <aside className="glass-card p-5 flex flex-col gap-5 shadow-2xl border-white/5">
-            <h2 className="text-body-lg font-semibold text-white px-2">
-              Tus Asignaturas
-            </h2>
+      <nav className="w-full max-w-[1400px] mx-auto px-4 pb-5 z-10">
+        <div className="mx-auto flex w-fit max-w-full items-center gap-1 rounded-2xl border border-white/10 bg-slate-950/70 p-1.5 shadow-xl backdrop-blur-xl">
+          {Object.entries(WORKSPACES).map(([key, workspace]) => {
+            const Icon = workspace.icon;
+            const active = activeWorkspace === key;
 
-            <nav className="flex flex-col gap-2">
-              {ASIGNATURAS.map((subject) => {
-                const Icon = subject.icon;
-                const isActive = activeSubject === subject.id;
-
-                return (
-                  <button
-                    key={subject.id}
-                    onClick={() => handleSubjectChange(subject.id)}
-                    className={`flex items-center gap-4 px-4 py-3 rounded-12 transition-all duration-300 text-left ${isActive
-                        ? "bg-primary/10 border border-primary/30 text-primary shadow-[0_0_15px_rgba(56,189,248,0.15)]"
-                        : "hover:bg-white/5 text-slate-400 border border-transparent"
-                      }`}
-                  >
-                    <Icon
-                      size={18}
-                      className={isActive ? "text-primary" : "text-slate-500"}
-                    />
-
-                    <span className="font-medium">{subject.name}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          </aside>
-
-          <StudyActionsPanel
-            activeSubjectName={activeSubjectData?.name || activeSubject}
-            isGenerating={isGeneratingStudy}
-            onGenerate={generateStudyArtifact}
-          />
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleWorkspaceChange(key)}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                  active
+                    ? "bg-cyan-400 text-slate-950 shadow-[0_0_18px_rgba(34,211,238,0.22)]"
+                    : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                }`}
+                title={workspace.description}
+              >
+                <Icon size={16} />
+                <span>{workspace.label}</span>
+              </button>
+            );
+          })}
         </div>
+      </nav>
 
-        <div className="min-w-0">
-          <div className="glass-card flex flex-col overflow-hidden shadow-2xl h-[660px] border-white/5">
-            <div className="p-5 border-b border-white/5 bg-black/20 flex items-center gap-3">
-              <MessageSquare size={20} className="text-primary" />
-              <h2 className="font-semibold text-white">
-                Tutor AI: {activeSubjectData?.name}
+      {activeWorkspace === "study" && (
+        <main className="w-full max-w-[1400px] mx-auto px-4 pb-6 grid grid-cols-1 gap-5 lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[250px_minmax(0,1fr)_390px] items-start z-10">
+          <div className="flex flex-col gap-5 min-w-0">
+            <aside className="glass-card p-5 flex flex-col gap-5 shadow-2xl border-white/5">
+              <h2 className="text-body-lg font-semibold text-white px-2">
+                Tus Asignaturas
               </h2>
-            </div>
 
-            <div className="flex-1 p-2 flex flex-col overflow-hidden">
-              <ChatAsignatura
-                key={`${activeSubject}-${appLanguage}`}
-                model="qwen2.5"
-                inputValue={chatInput}
-                onInputChange={setChatInput}
-                activeSubject={activeSubject}
-                activeSubjectName={activeSubjectData?.name || activeSubject}
-                selectedDateKey={selectedDateKey}
-                contextNotes={activeSubjectNotes}
-                chatMode={chatMode}
-                onChatModeChange={setChatMode}
-                languageCode={activeLanguage.speechCode}
-                languageName={activeLanguage.promptName}
-              />
+              <nav className="flex flex-col gap-2">
+                {ASIGNATURAS.map((subject) => {
+                  const Icon = subject.icon;
+                  const isActive = activeSubject === subject.id;
+
+                  return (
+                    <button
+                      key={subject.id}
+                      onClick={() => handleSubjectChange(subject.id)}
+                      className={`flex items-center gap-4 px-4 py-3 rounded-12 transition-all duration-300 text-left ${
+                        isActive
+                          ? "bg-primary/10 border border-primary/30 text-primary shadow-[0_0_15px_rgba(56,189,248,0.15)]"
+                          : "hover:bg-white/5 text-slate-400 border border-transparent"
+                      }`}
+                    >
+                      <Icon
+                        size={18}
+                        className={isActive ? "text-primary" : "text-slate-500"}
+                      />
+                      <span className="font-medium">{subject.name}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </aside>
+
+            <StudyActionsPanel
+              activeSubjectName={activeSubjectData?.name || activeSubject}
+              isGenerating={isGeneratingStudy}
+              onGenerate={generateStudyArtifact}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <div className="glass-card flex flex-col overflow-hidden shadow-2xl h-[660px] border-white/5">
+              <div className="p-5 border-b border-white/5 bg-black/20 flex items-center gap-3">
+                <MessageSquare size={20} className="text-primary" />
+                <h2 className="font-semibold text-white">
+                  Tutor AI: {activeSubjectData?.name}
+                </h2>
+              </div>
+
+              <div className="flex-1 p-2 flex flex-col overflow-hidden">
+                <ChatAsignatura
+                  key={`${activeSubject}-${appLanguage}`}
+                  model="qwen3.5:4b"
+                  inputValue={chatInput}
+                  onInputChange={setChatInput}
+                  activeSubject={activeSubject}
+                  activeSubjectName={activeSubjectData?.name || activeSubject}
+                  selectedDateKey={selectedDateKey}
+                  contextNotes={activeSubjectNotes}
+                  chatMode={chatMode}
+                  onChatModeChange={setChatMode}
+                  languageCode={activeLanguage.speechCode}
+                  languageName={activeLanguage.promptName}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="min-w-0 flex flex-col gap-4">
-          <VisualizadorAudio
-            ref={audioControlsRef}
-            transcriptSeed={liveTranscript}
-            resetSignal={transcriptResetSignal}
-            onLiveTranscriptChange={setLiveTranscript}
-            onListeningChange={setVoiceActive}
-            language={activeLanguage.speechCode}
-          />
+          <div className="min-w-0 flex flex-col gap-4">
+            <VisualizadorAudio
+              ref={audioControlsRef}
+              transcriptSeed={liveTranscript}
+              resetSignal={transcriptResetSignal}
+              onLiveTranscriptChange={setLiveTranscript}
+              onListeningChange={setVoiceActive}
+              language={activeLanguage.speechCode}
+            />
 
-          <TranscriptionPanel
-            transcript={liveTranscript}
-            isListening={voiceActive}
-            selectedDateKey={selectedDateKey}
-            onSave={saveLiveTranscriptToDiary}
-            onClear={clearLiveTranscript}
-            onResume={() => audioControlsRef.current?.start()}
-            onPause={() => audioControlsRef.current?.pause()}
-          />
+            <TranscriptionPanel
+              transcript={liveTranscript}
+              isListening={voiceActive}
+              selectedDateKey={selectedDateKey}
+              onSave={saveLiveTranscriptToDiary}
+              onClear={clearLiveTranscript}
+              onResume={() => audioControlsRef.current?.start()}
+              onPause={() => audioControlsRef.current?.pause()}
+            />
 
-          <NotesCalendarDiary
-            notes={diaryNotes}
-            status={notesStatus}
-            selectedDateKey={selectedDateKey}
-            onSelectedDateChange={setSelectedDateKey}
-            onAddToLatex={addNoteToLatex}
-            onDeleteNote={deleteNote}
-          />
-        </div>
-      </main>
+            <NotesCalendarDiary
+              notes={diaryNotes}
+              status={notesStatus}
+              selectedDateKey={selectedDateKey}
+              onSelectedDateChange={setSelectedDateKey}
+              onAddToLatex={addNoteToLatex}
+              onDeleteNote={deleteNote}
+            />
+          </div>
+        </main>
+      )}
+
+      {activeWorkspace === "notes" && (
+        <LatexNotebook
+          subjects={ASIGNATURAS}
+          activeSubject={activeSubject}
+          onSubjectChange={handleSubjectChange}
+          selectedDateKey={selectedDateKey}
+          onSelectedDateChange={setSelectedDateKey}
+          onNotePresenceChange={handleNotePresenceChange}
+        />
+      )}
+
+      {activeWorkspace === "planner" && (
+        <AcademicPlanner
+          subjects={ASIGNATURAS}
+          selectedDateKey={selectedDateKey}
+          onSelectedDateChange={setSelectedDateKey}
+          diaryNotes={diaryNotes}
+          events={academicEvents}
+          onEventsChange={setAcademicEvents}
+          latexNoteIndex={latexNoteIndex}
+          onOpenNotebook={openNotebookFromAgenda}
+        />
+      )}
+
+      {activeWorkspace === "grades" && (
+        <GradeTracker
+          subjects={ASIGNATURAS}
+          activeSubject={activeSubject}
+          onSubjectChange={handleSubjectChange}
+          gradeBooks={gradeBooks}
+          onGradeBooksChange={setGradeBooks}
+        />
+      )}
 
       <StudyResultModal
         result={studyResult}
