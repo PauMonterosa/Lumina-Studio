@@ -1,3 +1,4 @@
+// LUMINA_BIBLIOGRAPHY_V1
 import {
   Braces,
   Bot,
@@ -18,8 +19,10 @@ import {
   Sparkles,
   WandSparkles,
   X,
+  Library,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import ReferencePanel from "./ReferencePanel";
 
 const API_BASE = "http://localhost:3001";
 const AUTOSAVE_DELAY_MS = 350;
@@ -402,6 +405,8 @@ export default function LatexNotebook({
   selectedDateKey,
   onSelectedDateChange,
   onNotePresenceChange,
+  activeReference,
+  onActiveReferenceChange,
 }) {
   const editorRef = useRef(null);
   const saveTimerRef = useRef(null);
@@ -417,6 +422,7 @@ export default function LatexNotebook({
   const [pdfUrl, setPdfUrl] = useState("");
   const [tectonicReady, setTectonicReady] = useState(null);
   const [autoCompile, setAutoCompile] = useState(true);
+  const [referenceOpen, setReferenceOpen] = useState(Boolean(activeReference));
 
   const [aiAction, setAiAction] = useState(null);
   const [aiInstruction, setAiInstruction] = useState("");
@@ -517,6 +523,12 @@ export default function LatexNotebook({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSubject, selectedDateKey]);
 
+
+  useEffect(() => {
+    if (activeReference?.id) {
+      setReferenceOpen(true);
+    }
+  }, [activeReference?.id]);
 
   const readApiJson = async (response, routeName) => {
     const raw = await response.text();
@@ -1434,6 +1446,25 @@ export default function LatexNotebook({
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setReferenceOpen((value) => !value)}
+                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition ${
+                  referenceOpen
+                    ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
+                    : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-cyan-400/25 hover:text-cyan-200"
+                }`}
+                title="Abrir bibliografía junto a los apuntes"
+              >
+                <Library size={13} />
+                Referencia
+                {activeReference?.title && (
+                  <span className="ml-1 max-w-28 truncate text-[10px] text-cyan-300/80">
+                    {activeReference.title}
+                  </span>
+                )}
+              </button>
+
               {SNIPPETS.map((snippet) => {
                 const Icon = snippet.icon;
                 return (
@@ -2092,6 +2123,17 @@ export default function LatexNotebook({
           </div>
         </section>
       </div>
+      {referenceOpen && (
+        <div className="contents">
+          <ReferencePanel
+            activeSubject={activeSubject}
+            activeReference={activeReference}
+            onActiveReferenceChange={onActiveReferenceChange}
+            onClose={() => setReferenceOpen(false)}
+          />
+        </div>
+      )}
+
     </main>
   );
 }

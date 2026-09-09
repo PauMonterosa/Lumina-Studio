@@ -24,3 +24,6 @@ yarn-error.log*
 .venv/
 library/pdfs/
 .lumina/rag-pdf/
+
+# Lumina Bibliography · local/private presentations
+library/presentations/

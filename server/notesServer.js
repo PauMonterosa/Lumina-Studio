@@ -1,3 +1,4 @@
+// LUMINA_BIBLIOGRAPHY_V1
 import express from "express";
 import cors from "cors";
 import fs from "node:fs/promises";
@@ -12,6 +13,11 @@ import { registerNotebookScientificPlotRoutes } from "./notebookScientificPlotRo
 import { registerRagRoutes, retrieveRagContext } from "./ragRoutes.js";
 import { registerPdfRagRoutes, retrievePdfRagContext } from "./pdfRagRoutes.js";
 import { registerHybridRagRoutes, retrieveHybridRagContext } from "./hybridRagRoutes.js";
+import {
+    registerDocumentLibraryRoutes,
+    retrievePptxRagContext,
+    getActiveReferenceContext,
+} from "./documentLibraryRoutes.js";
 
 const app = express();
 
@@ -56,6 +62,8 @@ const NOTES_DIR = path.resolve(process.cwd(), "notes", "subjects");
 
 app.use(cors());
 app.use(express.json({ limit: "6mb" }));
+
+registerDocumentLibraryRoutes(app);
 
 registerHybridRagRoutes(app);
 
@@ -859,6 +867,7 @@ app.post("/api/chat/contextual", async (req, res) => {
             languageCode = "es-ES",
             languageName = "castellano",
             diaryNotes = [],
+            activeReference = null,
             messages = [],
             stream = true,
         } = req.body;
@@ -890,6 +899,18 @@ app.post("/api/chat/contextual", async (req, res) => {
             maxChars: 7200,
         });
 
+        const pptxRagContext = await retrievePptxRagContext({
+            query: question,
+            subject,
+            topK: 5,
+            maxChars: 4800,
+        }).catch(() => "");
+
+        const activeReferenceContext = await getActiveReferenceContext({
+            activeReference,
+            subject,
+        }).catch(() => "");
+
         const ragContext = "";
 
         const pdfRagContext = "";
@@ -913,8 +934,16 @@ app.post("/api/chat/contextual", async (req, res) => {
             question,
         });
 
+        if (activeReferenceContext) {
+            systemPrompt += `\n\n${activeReferenceContext}`;
+        }
+
         if (hybridRagContext) {
             systemPrompt += `\n\n${hybridRagContext}`;
+        }
+
+        if (pptxRagContext) {
+            systemPrompt += `\n\n${pptxRagContext}`;
         }
 
         if (pdfRagContext) {

@@ -6,11 +6,11 @@ import { spawn } from "node:child_process";
 const DAILY_NOTES_DIR = path.resolve(process.cwd(), "notes", "daily");
 
 const SUBJECT_NAMES = {
-  electronics: "Electrónica Física",
-  quantum: "Mecánica Cuántica",
-  control: "Teoría de Control",
-  photonics: "Fotónica",
-  solid_state: "Estado Sólido",
+  nanotechnologies: "Nanotechnologies",
+  quantum_technologies: "Quantum Technologies",
+  microelectronics_design: "Microelectronics Design",
+  cpia: "CPIA",
+  biophotonics: "Biophotonics",
 };
 
 const ALLOWED_SUBJECTS = new Set(Object.keys(SUBJECT_NAMES));

@@ -1,3 +1,4 @@
+// LUMINA_BIBLIOGRAPHY_V1
 import {
   Activity,
   Atom,
@@ -9,6 +10,7 @@ import {
   Database,
   FileText,
   Globe,
+  Library,
   MessageSquare,
   Sparkles,
   SunMedium,
@@ -20,6 +22,7 @@ import "./index.css";
 import "katex/dist/katex.min.css";
 
 import AcademicPlanner from "./components/AcademicPlanner";
+import Bibliography from "./components/Bibliography";
 import ChatAsignatura from "./components/ChatAsignatura";
 import GradeTracker from "./components/GradeTracker";
 import LatexNotebook from "./components/LatexNotebook";
@@ -102,6 +105,11 @@ const WORKSPACES = {
     description: "Eventos, entregas y diario",
     icon: CalendarDays,
   },
+  bibliography: {
+    label: "Bibliografía",
+    description: "Libros, papers y presentaciones por asignatura",
+    icon: Library,
+  },
   grades: {
     label: "Calificaciones",
     description: "Evaluación continua y objetivos",
@@ -151,6 +159,7 @@ function App() {
   const [appLanguage, setAppLanguage] = useState("es");
   const [isGeneratingStudy, setIsGeneratingStudy] = useState(false);
   const [studyResult, setStudyResult] = useState(null);
+  const [activeReference, setActiveReference] = useState(null);
 
   // LUMINA_DEEP_LINKS_V1
   useEffect(() => {
@@ -274,6 +283,18 @@ function App() {
     setActiveWorkspace("notes");
   };
 
+  const openReferenceInNotes = (document) => {
+    if (!document) return;
+    if (document.subject && ASIGNATURAS.some((item) => item.id === document.subject)) {
+      setActiveSubject(document.subject);
+    }
+    setActiveReference({
+      ...document,
+      slide: document.kind === "pptx" ? Number(document.slide || 1) : undefined,
+    });
+    setActiveWorkspace("notes");
+  };
+
   const handleWorkspaceChange = (workspaceId) => {
     audioControlsRef.current?.pause();
     setVoiceActive(false);
@@ -283,6 +304,9 @@ function App() {
   const handleSubjectChange = (subjectId) => {
     audioControlsRef.current?.pause();
     setActiveSubject(subjectId);
+    setActiveReference((current) =>
+      current?.subject && current.subject !== subjectId ? null : current
+    );
     setChatInput("");
     setVoiceActive(false);
     setNotesStatus("");
@@ -489,6 +513,15 @@ function App() {
       };
     }
 
+    if (activeWorkspace === "bibliography") {
+      return {
+        icon: Library,
+        title: `Bibliografía · ${activeSubjectData?.name || activeSubject}`,
+        subtitle: "Libros, papers y presentaciones disponibles para Lumina AI",
+        badge: "Biblioteca",
+      };
+    }
+
     if (activeWorkspace === "grades") {
       return {
         icon: BarChart3,
@@ -526,7 +559,7 @@ function App() {
                   Lumina Studio
                 </h1>
                 <span className="rounded-full border border-purple-400/20 bg-purple-500/10 px-3 py-1 text-xs font-mono tracking-wide text-purple-300">
-                  V5.1
+                  V5.2
                 </span>
               </div>
 
@@ -692,6 +725,7 @@ function App() {
                   onChatModeChange={setChatMode}
                   languageCode={activeLanguage.speechCode}
                   languageName={activeLanguage.promptName}
+                  activeReference={activeReference}
                 />
               </div>
             </div>
@@ -737,6 +771,17 @@ function App() {
           selectedDateKey={selectedDateKey}
           onSelectedDateChange={setSelectedDateKey}
           onNotePresenceChange={handleNotePresenceChange}
+          activeReference={activeReference}
+          onActiveReferenceChange={setActiveReference}
+        />
+      )}
+
+      {activeWorkspace === "bibliography" && (
+        <Bibliography
+          subjects={ASIGNATURAS}
+          activeSubject={activeSubject}
+          onSubjectChange={handleSubjectChange}
+          onOpenInNotes={openReferenceInNotes}
         />
       )}
 

@@ -1,3 +1,4 @@
+// LUMINA_BIBLIOGRAPHY_V1
 import { useRef, useState } from "react";
 import MessageContent from "./MessageContent";
 
@@ -358,6 +359,7 @@ export default function ChatAsignatura({
     onChatModeChange,
     languageCode = "es-ES",
     languageName = "castellano",
+    activeReference = null,
 }) {
     const mode = MODE_CONFIG[chatMode] || MODE_CONFIG.conceptual;
 
@@ -492,6 +494,7 @@ export default function ChatAsignatura({
                     languageCode,
                     languageName,
                     diaryNotes: contextNotes,
+                    activeReference,
                     messages: recentMessages.map((msg) => ({
                         role: msg.role,
                         content: msg.content,
@@ -627,6 +630,14 @@ export default function ChatAsignatura({
                             Contexto activo: {contextNotes.length} notas de{" "}
                             {activeSubjectName} · Idioma: {languageName}
                         </p>
+                        {activeReference?.title && (
+                            <p className="mt-1 truncate text-xs text-cyan-300">
+                                Referencia: {activeReference.title}
+                                {activeReference.kind === "pptx" && activeReference.slide
+                                    ? ` · diap. ${activeReference.slide}`
+                                    : ""}
+                            </p>
+                        )}
                     </div>
 
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
